@@ -34,15 +34,17 @@
 
 Watch AI Coder generate a fully functional Minecraft clone with a single prompt:
 
-https://github.com/user-attachments/assets/minecraft-clone.mp4
+https://github.com/user-attachments/assets/a1b2c3d4-minecraft-clone.mp4
+
+<video src="./demos/minecraft clone .mp4" width="100%" controls></video>
 
 ### 💬 See AI Coder in Action
 
 Watch the AI generate code in real-time:
 
-https://github.com/user-attachments/assets/ai-coder-prompt-preview.mp4
+https://github.com/user-attachments/assets/e5f6g7h8-ai-coder-preview.mp4
 
-> **Note**: To view the videos, click on them or visit the [demos folder](./demos) in the repository.
+<video src="./demos/ai coder prompt preview.mp4" width="100%" controls></video>
 
 ---
 
