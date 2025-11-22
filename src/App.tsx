@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, Code2, Download } from 'lucide-react';
 import CodeEditor from './components/CodeEditor';
 import Preview from './components/Preview';
