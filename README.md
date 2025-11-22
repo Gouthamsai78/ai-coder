@@ -32,19 +32,25 @@
 
 ### 🎮 Minecraft Clone - Built with ONE Prompt!
 
-Watch AI Coder generate a fully functional Minecraft clone with a single prompt:
+Watch AI Coder generate a fully functional **Minecraft clone** with a single prompt!
 
-https://github.com/user-attachments/assets/a1b2c3d4-minecraft-clone.mp4
+**[▶️ Watch: Minecraft Clone Demo](./demos/minecraft%20clone%20.mp4)**
 
-<video src="./demos/minecraft clone .mp4" width="100%" controls></video>
+> Click the link above to download and watch the full demo video
 
 ### 💬 See AI Coder in Action
 
-Watch the AI generate code in real-time:
+Watch the AI generate code in real-time as you chat with it:
 
-https://github.com/user-attachments/assets/e5f6g7h8-ai-coder-preview.mp4
+**[▶️ Watch: AI Coder Prompt Preview](./demos/ai%20coder%20prompt%20preview.mp4)**
 
-<video src="./demos/ai coder prompt preview.mp4" width="100%" controls></video>
+> Click the link above to download and watch AI Coder in action
+
+---
+
+**📹 Can't view the videos?** The demo videos are in the [`/demos`](./demos) folder. Download them to see:
+- How a complete Minecraft clone was built with ONE prompt
+- Real-time code generation and live preview in action
 
 ---
 
