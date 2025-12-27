@@ -1,26 +1,22 @@
-import { useState, useEffect } from 'react';
-import { Settings, Code2, Download, Home } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Settings, Download, Home, Plus, RefreshCw, Copy, Check, Rocket } from 'lucide-react';
 import CodeEditor from './components/CodeEditor';
 import Preview from './components/Preview';
+import SettingsModal, { AVAILABLE_MODELS } from './components/SettingsModal';
 import ChatInterface from './components/ChatInterface';
 import LandingPage from './components/LandingPage';
+import DiffViewer from './components/DiffViewer';
+import DeployModal from './components/DeployModal';
+import { ToastProvider, useToast } from './components/Toast';
 import { generateCodeStream } from './services/ai';
+import type { ApiProvider, FileAttachment } from './types';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
 
-function App() {
-  // Check if user has used the app before (has API key)
-  const hasUsedBefore = () => {
-    const apiKey = localStorage.getItem('openrouter_api_key');
-    const hasVisited = localStorage.getItem('has_visited_app');
-    return !!(apiKey && hasVisited);
-  };
-
-  const [showLanding, setShowLanding] = useState(!hasUsedBefore());
-  const [code, setCode] = useState<string>(`<!DOCTYPE html>
+const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -55,53 +51,214 @@ function App() {
         <p>Describe what you want to build in the chat!</p>
     </div>
 </body>
-</html>`);
+</html>`;
 
-  const [messages, setMessages] = useState<Message[]>([]);
+function AppContent() {
+  const { showToast } = useToast();
+
+  // Check if user has used the app before (has API key)
+  const hasUsedBefore = () => {
+    const apiKey = localStorage.getItem('ai_api_key');
+    const hasVisited = localStorage.getItem('has_visited_app');
+    return !!(apiKey && hasVisited);
+  };
+
+  const [showLanding, setShowLanding] = useState(!hasUsedBefore());
+  const [code, setCode] = useState<string>(() => {
+    const savedCode = localStorage.getItem('saved_code');
+    return savedCode && savedCode.length > 100 ? savedCode : DEFAULT_CODE;
+  });
+  const [codeHistory, setCodeHistory] = useState<string[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = localStorage.getItem('chat_messages');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('openrouter_api_key') || '');
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [lastPrompt, setLastPrompt] = useState<string>('');
+  const [selectedProvider, setSelectedProvider] = useState<ApiProvider>(() =>
+    (localStorage.getItem('selected_provider') as ApiProvider) || 'google'
+  );
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('ai_api_key') || '');
+  const [selectedModel, setSelectedModel] = useState(() =>
+    localStorage.getItem('selected_model') || AVAILABLE_MODELS[selectedProvider][0].id
+  );
   const [showSettings, setShowSettings] = useState(false);
+  const [showDeploy, setShowDeploy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [pendingCode, setPendingCode] = useState<string | null>(null); // For diff review
+  const [githubToken, setGithubToken] = useState(() => localStorage.getItem('github_token') || '');
 
   useEffect(() => {
     if (apiKey) {
-      localStorage.setItem('openrouter_api_key', apiKey);
+      localStorage.setItem('ai_api_key', apiKey);
     }
   }, [apiKey]);
 
-  const handleSendMessage = async (message: string) => {
+  useEffect(() => {
+    localStorage.setItem('selected_provider', selectedProvider);
+  }, [selectedProvider]);
+
+  useEffect(() => {
+    localStorage.setItem('selected_model', selectedModel);
+  }, [selectedModel]);
+
+  useEffect(() => {
+    localStorage.setItem('chat_messages', JSON.stringify(messages));
+  }, [messages]);
+
+  useEffect(() => {
+    localStorage.setItem('saved_code', code);
+  }, [code]);
+
+  useEffect(() => {
+    if (githubToken) {
+      localStorage.setItem('github_token', githubToken);
+    }
+  }, [githubToken]);
+
+  const handleSendMessage = useCallback(async (message: string, attachments?: FileAttachment[]) => {
     if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'user', content: message }, { role: 'assistant', content: 'Please set your OpenRouter API Key in settings first.' }]);
+      const providerName = selectedProvider === 'google' ? 'Google AI Studio' : 'OpenRouter';
+      setMessages(prev => [...prev, { role: 'user', content: message }, { role: 'assistant', content: `Please set your ${providerName} API Key in settings first.` }]);
       setShowSettings(true);
       return;
     }
 
+    setLastPrompt(message);
+    setLastError(null);
     const newMessages = [...messages, { role: 'user', content: message } as Message];
     setMessages(newMessages);
     setIsLoading(true);
 
-    try {
-      setCode('');
+    // Detect if this is a NEW build (default code) or MODIFICATION (existing project)
+    const isNewBuild = code.trim() === DEFAULT_CODE.trim();
 
+    // Save current code to history before AI changes it (only for modifications)
+    if (!isNewBuild) {
+      setCodeHistory(prev => [...prev.slice(-4), code]);
+    }
+
+    // Add a temporary assistant message showing generating status
+    setMessages(prev => [...prev, { role: 'assistant', content: '⏳ Generating code...' }]);
+
+    try {
       let accumulatedCode = '';
 
-      const result = await generateCodeStream(apiKey, newMessages, code, (chunk) => {
+      const result = await generateCodeStream(apiKey, selectedModel, newMessages, code, (chunk) => {
         accumulatedCode += chunk;
-        setCode(accumulatedCode);
-      });
+        // For NEW builds, stream directly to editor
+        if (isNewBuild) {
+          setCode(accumulatedCode);
+        }
+      }, selectedProvider, attachments);
 
-      // Set the final cleaned code
-      setCode(result.code);
-
-      // Add the AI's summary to the chat
-      setMessages(prev => [...prev, { role: 'assistant', content: result.summary }]);
+      if (isNewBuild) {
+        // For new builds, apply final cleaned code directly
+        setCode(result.code);
+        setMessages(prev => {
+          const newMsgs = [...prev];
+          const lastMsg = newMsgs[newMsgs.length - 1];
+          if (lastMsg.role === 'assistant') {
+            lastMsg.content = result.summary;
+          }
+          return newMsgs;
+        });
+        showToast('Code generated successfully!', 'success');
+      } else {
+        // For modifications, show diff for review
+        setPendingCode(result.code);
+        setMessages(prev => {
+          const newMsgs = [...prev];
+          const lastMsg = newMsgs[newMsgs.length - 1];
+          if (lastMsg.role === 'assistant') {
+            lastMsg.content = result.summary + '\n\n📝 Review the diff and click Apply to accept changes.';
+          }
+          return newMsgs;
+        });
+        showToast('Review the diff before applying', 'info');
+      }
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Please check your API key and try again.' }]);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setLastError(errorMessage);
+
+      // Remove the empty assistant message
+      setMessages(prev => prev.slice(0, -1));
+
+      // Show more specific error
+      const friendlyError = errorMessage.includes('401')
+        ? 'Invalid API key. Please check your settings.'
+        : errorMessage.includes('429')
+          ? 'Rate limit exceeded. Please wait a moment and try again.'
+          : errorMessage.includes('400')
+            ? 'Bad request. The model may not support this request format.'
+            : 'Something went wrong. Check console for details.';
+
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `❌ Error: ${friendlyError}\n\nClick "Retry" to try again, or check Settings if the issue persists.`
+      }]);
+
+      showToast(friendlyError, 'error');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [apiKey, selectedProvider, selectedModel, messages, code, showToast]);
 
-  const handleDownload = () => {
+  const handleRetry = useCallback(() => {
+    if (lastPrompt && !isLoading) {
+      // Remove the last error message
+      setMessages(prev => prev.slice(0, -2));
+      handleSendMessage(lastPrompt);
+    }
+  }, [lastPrompt, isLoading, handleSendMessage]);
+
+  const handleNewChat = useCallback(() => {
+    setMessages([]);
+    setCode(DEFAULT_CODE);
+    setCodeHistory([]);
+    setLastError(null);
+    setLastPrompt('');
+    localStorage.removeItem('chat_messages');
+    setPendingCode(null);
+    showToast('Started new chat (Reset All)', 'info');
+  }, [showToast]);
+
+  // Diff handlers
+  const handleApplyDiff = useCallback(() => {
+    if (pendingCode) {
+      setCode(pendingCode);
+      setPendingCode(null);
+      showToast('Changes applied!', 'success');
+    }
+  }, [pendingCode, showToast]);
+
+  const handleRejectDiff = useCallback(() => {
+    setPendingCode(null);
+    showToast('Changes rejected', 'info');
+  }, [showToast]);
+
+  const handleUndo = useCallback(() => {
+    if (codeHistory.length > 0) {
+      const previousCode = codeHistory[codeHistory.length - 1];
+      setCodeHistory(prev => prev.slice(0, -1));
+      setCode(previousCode);
+      showToast('Restored previous code', 'info');
+    }
+  }, [codeHistory, showToast]);
+
+  const handleCopyCode = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      showToast('Code copied to clipboard', 'success');
+    } catch (err) {
+      showToast('Failed to copy code', 'error');
+    }
+  }, [code, showToast]);
+
+  const handleDownload = useCallback(() => {
     const blob = new Blob([code], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -111,7 +268,8 @@ function App() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  };
+    showToast('Code downloaded!', 'success');
+  }, [code, showToast]);
 
   const handleGetStarted = () => {
     localStorage.setItem('has_visited_app', 'true');
@@ -123,24 +281,82 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col bg-[#0f0f0f] text-white overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-[#0f0f0f] to-black">
+    <div className="flex h-screen w-full flex-col bg-dot-pattern bg-glow overflow-hidden">
       {/* Header */}
-      <header className="glass flex h-16 shrink-0 items-center justify-between px-6 z-10 relative">
+      <header className="glass flex h-14 shrink-0 items-center justify-between px-6 z-10">
         <div className="flex items-center gap-3">
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg shadow-blue-500/20">
-            <Code2 className="h-6 w-6 text-white" />
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-lg overflow-hidden">
+            <img src="/logo.jpg" alt="AI Coder Logo" className="h-full w-full object-cover" />
           </div>
           <div>
-            <h1 className="font-bold text-xl tracking-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+            <h1 className="font-semibold text-base tracking-tight">
               AI Coder
             </h1>
-            <span className="text-xs text-gray-500 font-medium">by Goutham Sai</span>
+            <span className="text-[10px] text-[hsl(var(--muted-foreground))]">by Goutham Sai</span>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          {/* Clear Chat Button */}
+          <button
+            onClick={() => {
+              setMessages([]);
+              setLastError(null);
+              showToast('Chat history cleared (Code preserved)', 'info');
+            }}
+            className="btn-ghost flex items-center gap-2 px-3 py-2 text-sm"
+            title="Clear Chat History (Keep Code)"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Clear</span>
+          </button>
+
+          {/* New Chat Button */}
+          <button
+            onClick={handleNewChat}
+            className="btn-ghost flex items-center gap-2 px-3 py-2 text-sm"
+            title="New Project (Reset All)"
+          >
+            <Plus className="h-4 w-4" />
+            <span>New</span>
+          </button>
+
+          {/* Retry Button (show only if there was an error) */}
+          {lastError && !isLoading && (
+            <button
+              onClick={handleRetry}
+              className="btn-ghost flex items-center gap-2 px-3 py-2 text-sm text-amber-400 hover:text-amber-300"
+              title="Retry last prompt"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Retry</span>
+            </button>
+          )}
+
+          {/* Undo Button */}
+          {codeHistory.length > 0 && (
+            <button
+              onClick={handleUndo}
+              className="btn-ghost flex items-center gap-2 px-3 py-2 text-sm"
+              title="Undo last AI change"
+            >
+              <RefreshCw className="h-4 w-4 rotate-180" />
+              <span>Undo</span>
+            </button>
+          )}
+
+          {/* Copy Code Button */}
+          <button
+            onClick={handleCopyCode}
+            className="btn-ghost flex items-center gap-2 px-3 py-2 text-sm"
+            title="Copy Code"
+          >
+            {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+            <span>{copied ? 'Copied!' : 'Copy'}</span>
+          </button>
+
           <button
             onClick={() => setShowLanding(true)}
-            className="glass glass-hover flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-all duration-200"
+            className="btn-ghost flex items-center gap-2 px-3 py-2 text-sm"
             title="Back to Home"
           >
             <Home className="h-4 w-4" />
@@ -148,15 +364,23 @@ function App() {
           </button>
           <button
             onClick={handleDownload}
-            className="glass glass-hover flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-all duration-200"
+            className="btn-ghost flex items-center gap-2 px-3 py-2 text-sm"
             title="Download Code"
           >
             <Download className="h-4 w-4" />
             <span>Download</span>
           </button>
           <button
+            onClick={() => setShowDeploy(true)}
+            className="btn-primary flex items-center gap-2 px-3 py-2 text-sm"
+            title="Deploy Your App"
+          >
+            <Rocket className="h-4 w-4" />
+            <span>Deploy</span>
+          </button>
+          <button
             onClick={() => setShowSettings(!showSettings)}
-            className="glass glass-hover rounded-lg p-2.5 text-gray-400 hover:text-white transition-all duration-200"
+            className="btn-ghost p-2"
             title="Settings"
           >
             <Settings className="h-5 w-5" />
@@ -166,27 +390,27 @@ function App() {
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="absolute right-6 top-20 z-50 w-80 rounded-xl glass p-5 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
-          <h3 className="mb-3 text-sm font-semibold text-gray-200 flex items-center gap-2">
-            <Settings className="h-4 w-4 text-blue-400" />
-            API Configuration
-          </h3>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-gray-400 block mb-1.5">OpenRouter API Key</label>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-or-..."
-                className="w-full rounded-lg border border-gray-700/50 bg-black/30 px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-              />
-            </div>
-            <p className="text-xs text-gray-500">
-              Get your key from <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline transition-colors">openrouter.ai</a>
-            </p>
-          </div>
-        </div>
+        <SettingsModal
+          apiKey={apiKey}
+          setApiKey={setApiKey}
+          selectedModel={selectedModel}
+          setSelectedModel={setSelectedModel}
+          selectedProvider={selectedProvider}
+          setSelectedProvider={setSelectedProvider}
+          githubToken={githubToken}
+          setGithubToken={setGithubToken}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
+
+      {/* Deploy Modal */}
+      {showDeploy && (
+        <DeployModal
+          code={code}
+          githubToken={githubToken}
+          onClose={() => setShowDeploy(false)}
+          onOpenSettings={() => setShowSettings(true)}
+        />
       )}
 
       {/* Main Content */}
@@ -203,14 +427,32 @@ function App() {
         {/* Right Panel - Editor & Preview */}
         <div className="flex flex-1 gap-4 min-w-0">
           <div className="flex-1 overflow-hidden rounded-xl glass shadow-2xl">
-            <CodeEditor code={code} onChange={(val) => setCode(val || '')} />
+            <CodeEditor code={code} onChange={(val) => setCode(val || '')} isLoading={isLoading} />
           </div>
           <div className="flex-1 overflow-hidden rounded-xl glass shadow-2xl">
             <Preview code={code} />
           </div>
         </div>
       </main>
+
+      {/* Diff Viewer Modal */}
+      {pendingCode && pendingCode !== code && (
+        <DiffViewer
+          oldCode={code}
+          newCode={pendingCode}
+          onApply={handleApplyDiff}
+          onReject={handleRejectDiff}
+        />
+      )}
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 }
 
