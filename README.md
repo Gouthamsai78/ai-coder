@@ -1,8 +1,8 @@
 # 🚀 AI Coder
 
-> **AI-Powered Code Generation Platform** - Transform your ideas into beautiful, functional HTML web applications through natural conversation.
+> **AI-Powered Code Generation Platform** - Transform your ideas into beautiful, functional web applications through natural conversation.
 
-![AI Coder](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![AI Coder](https://img.shields.io/badge/version-2.0.0-blue.svg)
 ![React](https://img.shields.io/badge/React-19.2.0-61dafb.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-3178c6.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
@@ -11,20 +11,39 @@
 
 ## 📖 Overview
 
-**AI Coder** is an intelligent web application that allows you to create stunning, production-ready HTML websites simply by describing what you want to build. Powered by AI, it generates complete, self-contained HTML files with modern design, responsive layouts, and interactive features.
+**AI Coder** is an intelligent web application that allows you to create stunning, production-ready HTML websites by simply describing what you want to build. Powered by **Google Gemini** and **OpenRouter**, it generates complete, self-contained HTML files with modern design, responsive layouts, and interactive features.
 
-### ✨ Key Features
+---
 
-- 🤖 **AI-Powered Generation** - Describe your vision in plain English, get beautiful code
-- ⚡ **Real-time Streaming** - Watch your code being generated in real-time
-- 👀 **Live Preview** - Instant visual feedback with sandboxed iframe preview
-- 💾 **Download Code** - Export your generated HTML with one click
-- 🎨 **Modern Editor** - VS Code-powered Monaco editor with syntax highlighting
-- 💬 **Contextual Chat** - AI remembers your conversation for iterative improvements
-- 🎯 **Single-File Output** - Complete HTML with inline CSS and JavaScript
-- 📱 **Responsive Design** - Generated code works on mobile, tablet, and desktop
-- 🌙 **Flexible Styling** - Supports glassmorphism, minimalist, neumorphic, and more
-- 🔒 **Secure** - API keys stored locally, sandboxed preview execution
+## ✨ Key Features
+
+### 🤖 AI-Powered Generation
+- **Multi-Provider Support** - Use Google AI Studio (Gemini) or OpenRouter
+- **Real-time Streaming** - Watch your code being generated live
+- **Production-Ready Output** - 800-1500+ lines of comprehensive code
+- **Smart Context** - AI remembers your conversation for iterative improvements
+
+### 📎 File Attachments (NEW!)
+- **Upload Context Files** - Images, PDFs, and text files
+- **Multimodal AI** - Gemini can "see" your images and PDFs
+- **Design Recreation** - Upload mockups and get code back
+- **Resume/Portfolio** - Upload PDF to auto-generate portfolio sites
+
+### 🚀 One-Click Deploy (NEW!)
+- **CodePen** - Instant share, no account needed
+- **GitHub Gist** - Permanent link with live preview
+- **New Tab Preview** - Quick local testing
+
+### 🔄 Smart Diff System (NEW!)
+- **Visual Diff Viewer** - See what changed before applying
+- **Apply/Reject Changes** - Full control over AI modifications
+- **New builds stream directly** - Instant feedback for fresh projects
+
+### 💻 Developer Experience
+- **Monaco Editor** - VS Code-powered with syntax highlighting
+- **Live Preview** - Sandboxed iframe preview updates in real-time
+- **Undo/Redo** - Revert AI changes with one click
+- **Download/Copy** - Export your code instantly
 
 ---
 
@@ -32,15 +51,11 @@
 
 ### 🎮 Minecraft Clone - Built with ONE Prompt!
 
-Click to watch AI Coder generate a fully functional **Minecraft clone** with a single prompt!
-
 [![Watch Minecraft Clone Demo](https://img.shields.io/badge/▶️_Watch-Minecraft_Clone_Demo-blue?style=for-the-badge&logo=youtube)](./demos/minecraft%20clone%20.mp4)
 
 [**🎥 Download Video** (minecraft clone .mp4)](./demos/minecraft%20clone%20.mp4)
 
-### 💬 See AI Coder in Action  
-
-Watch the AI generate code in real-time as you chat with it:
+### 💬 See AI Coder in Action
 
 [![Watch AI Coder in Action](https://img.shields.io/badge/▶️_Watch-AI_Coder_in_Action-purple?style=for-the-badge&logo=youtube)](./demos/ai%20coder%20prompt%20preview.mp4)
 
@@ -48,30 +63,15 @@ Watch the AI generate code in real-time as you chat with it:
 
 ---
 
-**� Tip:** Click the badges above to view the videos, or download them for offline viewing!
-
----
-
 ## 🛠️ Tech Stack
 
-### Frontend
-- **React 19.2.0** - Latest React with modern hooks and features
-- **TypeScript 5.9.3** - Type-safe development
-- **Vite (Rolldown)** - Lightning-fast build tool and dev server
-- **TailwindCSS 4.1.17** - Utility-first CSS framework
-
-### Code Editor
-- **Monaco Editor 0.55.1** - VS Code's editor engine
-- **@monaco-editor/react** - React wrapper for Monaco
-
-### AI Integration
-- **OpenAI SDK 6.9.1** - Configured for OpenRouter API
-- **OpenRouter** - Multi-model AI gateway
-- **Streaming Support** - Real-time code generation feedback
-
-### UI Components
-- **Lucide React** - Beautiful, consistent icons
-- **clsx + tailwind-merge** - Dynamic className utilities
+| Category | Technology |
+|----------|------------|
+| **Frontend** | React 19.2.0, TypeScript 5.9.3, Vite |
+| **Styling** | TailwindCSS 4.x, Custom CSS |
+| **Editor** | Monaco Editor 0.55.1 |
+| **AI** | Google Generative AI SDK, OpenAI SDK (OpenRouter) |
+| **Utilities** | diff-match-patch, Lucide Icons |
 
 ---
 
@@ -79,98 +79,62 @@ Watch the AI generate code in real-time as you chat with it:
 
 ### Prerequisites
 
-- **Node.js** (v18 or higher)
-- **npm** or **yarn**
-- **OpenRouter API Key** (Get one at [openrouter.ai](https://openrouter.ai/keys))
+- **Node.js** v18 or higher
+- **API Key** - Either:
+  - [Google AI Studio](https://aistudio.google.com/app/apikey) (Free, recommended)
+  - [OpenRouter](https://openrouter.ai/keys) (Multi-model access)
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Gouthamsai78/vibe-coder-.git
-   cd vibe-coder-
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/Gouthamsai78/ai-coder.git
+cd ai-coder
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+# Install dependencies
+npm install
 
-3. **Start development server**
-   ```bash
-   npm run dev
-   ```
+# Start development server
+npm run dev
 
-4. **Open in browser**
-   ```
-   http://localhost:5173
-   ```
+# Open http://localhost:5173
+```
 
 ### Configuration
 
-1. Click the **Settings** icon (⚙️) in the header
-2. Enter your **OpenRouter API Key** (starts with `sk-or-...`)
-3. The key is stored locally in your browser
+1. Click the **⚙️ Settings** icon in the header
+2. Choose your **API Provider** (Google AI or OpenRouter)
+3. Enter your **API Key**
+4. (Optional) Add **GitHub Token** for Deploy feature
 
 ---
 
 ## 📖 How to Use
 
 ### 1. Set Your API Key
-- Click the settings icon in the top-right corner
-- Paste your OpenRouter API key
-- The key is saved automatically in localStorage
+- Click Settings → Choose Provider → Paste API Key
+- Keys are stored locally in your browser
 
 ### 2. Start Building
-Type what you want to create in the chat, for example:
+Type what you want to create:
 - "Create a landing page for a SaaS product"
-- "Build a portfolio website with a dark theme"
-- "Make a pricing page with 3 tiers"
+- "Build a portfolio website with dark theme"
+- "Make an e-commerce dashboard with charts"
 
-### 3. Watch It Generate
-- See the code being written in real-time (streaming)
-- Preview updates live in the right panel
-- Chat interface shows AI responses
+### 3. Upload Context (Optional)
+- Click 📎 to attach files
+- Supported: Images (PNG, JPG), PDFs, Text files
+- AI uses them to understand your vision
 
-### 4. Iterate and Refine
-Continue chatting to make changes:
-- "Make the buttons bigger"
-- "Add a contact form"
-- "Change colors to blue and purple"
-- "Add animations to the cards"
+### 4. Watch It Generate
+- Real-time code streaming
+- Live preview updates
+- Smart diff for modifications
 
-### 5. Download Your Code
-- Click the **Download** button in the header
-- Get a complete, ready-to-deploy HTML file
-- Open it in any browser - no dependencies needed!
-
----
-
-## 🎨 Generated Code Features
-
-The AI generates HTML files with:
-
-### Design Qualities
-✅ Modern, professional aesthetics  
-✅ Responsive layouts (mobile, tablet, desktop)  
-✅ Smooth animations and transitions  
-✅ Accessible markup (ARIA labels, semantic HTML)  
-✅ Google Fonts integration  
-✅ Font Awesome icons via CDN  
-
-### Technical Features
-✅ Single-file architecture (HTML + CSS + JS)  
-✅ TailwindCSS via CDN  
-✅ Pure JavaScript (no build step required)  
-✅ Clean, commented code  
-✅ SEO-friendly meta tags  
-
-### Supported Styles
-- 🌈 Glassmorphism
-- 🎨 Minimalist
-- 💎 Neumorphism
-- 🔥 Bold & Vibrant
-- And custom styles based on your request!
+### 5. Deploy & Share
+- Click **🚀 Deploy** button
+- Choose CodePen, GitHub Gist, or New Tab
+- Share your creation with the world!
 
 ---
 
@@ -180,146 +144,109 @@ The AI generates HTML files with:
 ai-coder/
 ├── src/
 │   ├── components/
-│   │   ├── ChatInterface.tsx    # Chat UI with message history
-│   │   ├── CodeEditor.tsx       # Monaco-based code editor
-│   │   └── Preview.tsx          # Live HTML preview iframe
+│   │   ├── ChatInterface.tsx    # Chat UI with file attachments
+│   │   ├── CodeEditor.tsx       # Monaco-based editor
+│   │   ├── Preview.tsx          # Live HTML preview
+│   │   ├── DiffViewer.tsx       # Visual diff comparison
+│   │   ├── DeployModal.tsx      # Deploy options UI
+│   │   ├── SettingsModal.tsx    # API & GitHub settings
+│   │   └── Toast.tsx            # Notification system
 │   ├── services/
-│   │   └── ai.ts                # OpenRouter API integration & streaming
-│   ├── App.tsx                  # Main application component
-│   ├── main.tsx                 # React entry point
-│   └── index.css                # Global styles + glassmorphism utilities
-├── public/                      # Static assets
-├── package.json                 # Dependencies & scripts
-├── vite.config.ts              # Vite configuration
-├── tailwind.config.js          # Tailwind CSS config
-└── tsconfig.json               # TypeScript configuration
+│   │   ├── ai.ts                # AI integration (Gemini + OpenRouter)
+│   │   ├── deploy.ts            # Deployment services
+│   │   └── fileProcessor.ts     # File upload utilities
+│   ├── types/
+│   │   └── index.ts             # TypeScript interfaces
+│   ├── App.tsx                  # Main application
+│   └── index.css                # Global styles
+├── public/
+│   └── logo.jpg                 # App logo
+└── package.json
 ```
 
 ---
 
-## 🎯 Use Cases
+## 🎯 What AI Coder Can Build
 
-### For Developers
-- 🚀 Rapid prototyping
-- 💡 Quick mockups for client presentations
-- 📚 Learning HTML/CSS/JavaScript patterns
-- 🎨 Design inspiration
+### Application Types
+| Type | Examples |
+|------|----------|
+| **Dashboards** | Analytics, Admin panels, KPI trackers |
+| **E-Commerce** | Product pages, Carts, Checkout flows |
+| **Landing Pages** | SaaS, Portfolios, Coming soon |
+| **Productivity** | Todo apps, Kanban boards, Note-taking |
+| **Games** | Simple browser games, Interactive puzzles |
+| **Social** | Profile pages, Feeds, Chat interfaces |
 
-### For Designers
-- 🖼️ Convert ideas to working prototypes
-- 🎭 Test design concepts quickly
-- 📱 Create interactive mockups
-- 🌐 Build portfolio pieces
+### Technical Features
+- ✅ Responsive layouts (mobile, tablet, desktop)
+- ✅ Modern CSS (Glassmorphism, Gradients, Animations)
+- ✅ Interactive JavaScript (State management, Event handling)
+- ✅ Firebase/Supabase integration patterns
+- ✅ Chart.js, Three.js, GSAP integrations
+- ✅ Accessibility (ARIA, Semantic HTML)
 
-### For Entrepreneurs
-- 📄 Create landing pages
-- 💼 Build marketing sites
-- 🎯 Test product ideas
-- 📊 Generate pricing pages
+---
+
+## 🔐 Security & Privacy
+
+- **Local Storage** - API keys and code stay in your browser
+- **Sandboxed Preview** - Generated code runs in isolated iframe
+- **No Data Collection** - Nothing is sent to our servers
+- **Direct API Calls** - Requests go straight to AI providers
 
 ---
 
 ## ⚙️ Available Scripts
 
 ```bash
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Run ESLint
-npm run lint
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run preview  # Preview production build
+npm run lint     # Run ESLint
 ```
-
----
-
-## 🔒 Security & Privacy
-
-- **API Keys**: Stored locally in browser's localStorage, never sent to our servers
-- **Sandboxed Preview**: Generated code runs in isolated iframe with restricted permissions
-- **No Data Collection**: Your code and conversations stay in your browser
-- **OpenRouter**: API calls go directly to OpenRouter's secure endpoints
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Here's how you can help:
-
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit your changes** (`git commit -m 'Add amazing feature'`)
-4. **Push to branch** (`git push origin feature/amazing-feature`)
-5. **Open a Pull Request**
-
-### Development Guidelines
-- Use TypeScript for type safety
-- Follow existing code style
-- Add comments for complex logic
-- Test your changes locally
-- Update documentation as needed
-
----
-
-## 🐛 Known Issues & Limitations
-
-- **Single File Only**: Currently generates one HTML file (no multi-file projects)
-- **No Persistence**: Code is lost on refresh (use download to save)
-- **API Costs**: OpenRouter API usage may incur costs depending on your plan
-- **Browser-based**: Runs entirely in browser, large files may impact performance
 
 ---
 
 ## 🗺️ Roadmap
 
-### Upcoming Features
-- [ ] Multi-file project support (separate HTML, CSS, JS)
-- [ ] Project save/load functionality
-- [ ] Multiple AI model selection
-- [ ] Code version history
-- [ ] Deploy to Netlify/Vercel integration
+### ✅ Completed
+- [x] Multi-provider AI support (Google AI + OpenRouter)
+- [x] File attachments for AI context
+- [x] Deploy to CodePen/GitHub Gist
+- [x] Visual diff system
+- [x] Enhanced AI prompting for complex apps
+
+### 🔜 Coming Soon
+- [ ] GitHub Pages deployment (OAuth)
+- [ ] Multi-file project support
+- [ ] Project save/load
+- [ ] Version history
 - [ ] Template library
 - [ ] Collaboration features
-- [ ] Dark/Light mode toggle for editor
-- [ ] Code formatting (Prettier integration)
-- [ ] Export to CodePen/JSFiddle
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-## 🙏 Acknowledgments
+## 📬 Contact
 
-- **OpenRouter** - For multi-model AI access
-- **Monaco Editor** - VS Code's amazing editor
-- **React Team** - For the incredible framework
-- **Vite Team** - For the blazing-fast build tool
-- **TailwindCSS** - For the utility-first CSS framework
-
----
-
-## 📬 Contact & Support
-
-- **GitHub Issues**: [Report bugs or request features](https://github.com/Gouthamsai78/vibe-coder-/issues)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/Gouthamsai78/ai-coder/issues)
 - **Email**: gouthamsai78@gmail.com
-
----
-
-## 🌟 Show Your Support
-
-If you find Vibe Coder useful, please consider:
-- ⭐ Starring the repository
-- 🐦 Sharing on social media
-- 🤝 Contributing to the project
-- ☕ Buying me a coffee
 
 ---
 
@@ -327,6 +254,6 @@ If you find Vibe Coder useful, please consider:
 
 **Made with ❤️ by Goutham Sai**
 
-
+⭐ Star this repo if you find it useful!
 
 </div>
