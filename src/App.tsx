@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Settings, Download, Home, Plus, RefreshCw, Copy, Check, Rocket } from 'lucide-react';
+import { Settings, Download, Home, Plus, RefreshCw, Copy, Check, Rocket, MessageSquare, Code2, Play } from 'lucide-react';
 import CodeEditor from './components/CodeEditor';
 import Preview from './components/Preview';
 import SettingsModal, { AVAILABLE_MODELS } from './components/SettingsModal';
@@ -88,6 +88,7 @@ function AppContent() {
   const [copied, setCopied] = useState(false);
   const [pendingCode, setPendingCode] = useState<string | null>(null); // For diff review
   const [githubToken, setGithubToken] = useState(() => localStorage.getItem('github_token') || '');
+  const [activeTab, setActiveTab] = useState<'chat' | 'code' | 'preview'>('chat');
 
   useEffect(() => {
     if (apiKey) {
@@ -289,10 +290,10 @@ function AppContent() {
             <img src="/logo.jpg" alt="AI Coder Logo" className="h-full w-full object-cover" />
           </div>
           <div>
-            <h1 className="font-semibold text-base tracking-tight">
+            <h1 className="font-semibold text-base tracking-tight hidden sm:block">
               AI Coder
             </h1>
-            <span className="text-[10px] text-[hsl(var(--muted-foreground))]">by Goutham Sai</span>
+            <span className="text-[10px] text-[hsl(var(--muted-foreground))] hidden sm:block">by Goutham Sai</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -317,7 +318,7 @@ function AppContent() {
             title="New Project (Reset All)"
           >
             <Plus className="h-4 w-4" />
-            <span>New</span>
+            <span className="hidden sm:inline">New</span>
           </button>
 
           {/* Retry Button (show only if there was an error) */}
@@ -328,7 +329,7 @@ function AppContent() {
               title="Retry last prompt"
             >
               <RefreshCw className="h-4 w-4" />
-              <span>Retry</span>
+              <span className="hidden sm:inline">Retry</span>
             </button>
           )}
 
@@ -340,7 +341,7 @@ function AppContent() {
               title="Undo last AI change"
             >
               <RefreshCw className="h-4 w-4 rotate-180" />
-              <span>Undo</span>
+              <span className="hidden sm:inline">Undo</span>
             </button>
           )}
 
@@ -351,7 +352,7 @@ function AppContent() {
             title="Copy Code"
           >
             {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-            <span>{copied ? 'Copied!' : 'Copy'}</span>
+            <span className="hidden sm:inline">{copied ? 'Copied!' : 'Copy'}</span>
           </button>
 
           <button
@@ -360,7 +361,7 @@ function AppContent() {
             title="Back to Home"
           >
             <Home className="h-4 w-4" />
-            <span>Home</span>
+            <span className="hidden sm:inline">Home</span>
           </button>
           <button
             onClick={handleDownload}
@@ -368,7 +369,7 @@ function AppContent() {
             title="Download Code"
           >
             <Download className="h-4 w-4" />
-            <span>Download</span>
+            <span className="hidden sm:inline">Download</span>
           </button>
           <button
             onClick={() => setShowDeploy(true)}
@@ -376,7 +377,7 @@ function AppContent() {
             title="Deploy Your App"
           >
             <Rocket className="h-4 w-4" />
-            <span>Deploy</span>
+            <span className="hidden sm:inline">Deploy</span>
           </button>
           <button
             onClick={() => setShowSettings(!showSettings)}
@@ -414,9 +415,9 @@ function AppContent() {
       )}
 
       {/* Main Content */}
-      <main className="flex flex-1 overflow-hidden p-4 gap-4">
+      <main className="flex flex-1 overflow-hidden p-4 gap-4 pb-20 lg:pb-4">
         {/* Left Panel - Chat */}
-        <div className="w-[400px] shrink-0 flex flex-col gap-4">
+        <div className={`w-full lg:w-[400px] shrink-0 flex flex-col gap-4 ${activeTab === 'chat' ? 'flex' : 'hidden lg:flex'}`}>
           <ChatInterface
             messages={messages}
             onSendMessage={handleSendMessage}
@@ -425,15 +426,40 @@ function AppContent() {
         </div>
 
         {/* Right Panel - Editor & Preview */}
-        <div className="flex flex-1 gap-4 min-w-0">
-          <div className="flex-1 overflow-hidden rounded-xl glass shadow-2xl">
+        <div className={`flex-1 flex flex-col lg:flex-row gap-4 min-w-0 ${activeTab !== 'chat' ? 'flex' : 'hidden lg:flex'}`}>
+          <div className={`flex-1 overflow-hidden rounded-xl glass shadow-2xl ${activeTab === 'code' ? 'flex' : 'hidden lg:flex'}`}>
             <CodeEditor code={code} onChange={(val) => setCode(val || '')} isLoading={isLoading} />
           </div>
-          <div className="flex-1 overflow-hidden rounded-xl glass shadow-2xl">
+          <div className={`flex-1 overflow-hidden rounded-xl glass shadow-2xl ${activeTab === 'preview' ? 'flex' : 'hidden lg:flex'}`}>
             <Preview code={code} />
           </div>
         </div>
       </main>
+
+      {/* Mobile Navigation */}
+      <nav className="fixed bottom-4 left-4 right-4 h-16 glass rounded-2xl flex lg:hidden items-center justify-around px-2 z-50 border border-[hsl(var(--border))] shadow-2xl">
+        <button
+          onClick={() => setActiveTab('chat')}
+          className={`flex flex-col items-center justify-center w-full h-full gap-1 rounded-xl transition-all ${activeTab === 'chat' ? 'text-[hsl(var(--primary))] bg-[hsl(var(--primary))/10]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
+        >
+          <MessageSquare className="h-5 w-5" />
+          <span className="text-[10px] font-medium">Chat</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('code')}
+          className={`flex flex-col items-center justify-center w-full h-full gap-1 rounded-xl transition-all ${activeTab === 'code' ? 'text-[hsl(var(--primary))] bg-[hsl(var(--primary))/10]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
+        >
+          <Code2 className="h-5 w-5" />
+          <span className="text-[10px] font-medium">Code</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('preview')}
+          className={`flex flex-col items-center justify-center w-full h-full gap-1 rounded-xl transition-all ${activeTab === 'preview' ? 'text-[hsl(var(--primary))] bg-[hsl(var(--primary))/10]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
+        >
+          <Play className="h-5 w-5" />
+          <span className="text-[10px] font-medium">Preview</span>
+        </button>
+      </nav>
 
       {/* Diff Viewer Modal */}
       {pendingCode && pendingCode !== code && (
