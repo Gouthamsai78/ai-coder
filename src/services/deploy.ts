@@ -106,10 +106,10 @@ export async function deployToGitHubGist(
  * @param code - The HTML code to embed
  * @returns URL to open in StackBlitz
  */
-export function createStackBlitzUrl(code: string): string {
+export function createStackBlitzUrl(_code: string): string {
     // StackBlitz supports opening projects via URL with base64 encoded files
     // For simplicity, we'll use their project creation endpoint
-    const encodedCode = encodeURIComponent(code);
+    // Note: StackBlitz doesn't support inline code in URL for HTML projects directly
 
     // Using StackBlitz's URL-based project creation
     // This opens a new vanilla HTML project with the code

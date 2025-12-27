@@ -8,7 +8,7 @@ interface CodeEditorProps {
     isLoading?: boolean;
 }
 
-const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, isLoading }) => {
+const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, isLoading: _isLoading }) => {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = useCallback(async () => {

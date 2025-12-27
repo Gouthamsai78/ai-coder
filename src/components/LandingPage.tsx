@@ -4,9 +4,8 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import VanillaTilt from 'vanilla-tilt';
 import {
-    Terminal, Menu, X, Zap, Layers, RefreshCw, Play, Sparkles, Check,
-    Code2, Search, GitBranch, Bug, ArrowRight, Wand2, Rocket, Lock,
-    Monitor, Mail, Github
+    Terminal, Menu, X, Layers, Play, Check,
+    Code2, Search, GitBranch, Bug, ArrowRight, Wand2, Rocket, Lock
 } from 'lucide-react';
 
 // Register GSAP plugin
@@ -23,9 +22,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
     const cursorOutlineRef = useRef<HTMLDivElement>(null);
     const heroRef = useRef<HTMLDivElement>(null);
     const startBtnRef = useRef<HTMLButtonElement>(null);
-
-    // Safety ref for StrictMode double-mounting
-    const isMounted = useRef(false);
 
     // --- Custom Cursor Effect ---
     useEffect(() => {
@@ -78,9 +74,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
     useEffect(() => {
         if (!canvasRef.current) return;
 
-        // Cleanup any previous instance
-        // This is crucial for React StrictMode
-        const existingCanvas = canvasRef.current;
+        // Cleanup any previous instance is handled in cleanup function below
 
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x000000, 0.002);
@@ -136,7 +130,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
         let animationId: number;
 
         const animate = () => {
-            const elapsedTime = clock.getElapsedTime();
+            // Keep clock running for consistent animation
+            clock.getElapsedTime();
 
             targetX = mouseX * 0.001;
             targetY = mouseY * 0.001;
