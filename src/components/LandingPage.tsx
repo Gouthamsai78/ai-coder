@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect } from 'react';
 import Hero from './ui/animated-shader-hero';
 import {
     Sparkles,
-    ArrowRight,
     Play,
     Terminal,
     Lock,
@@ -16,12 +15,12 @@ import {
 const TypingCode: React.FC = () => {
     const [text, setText] = useState('');
     const fullText = `const App = () => {
-  // Generating component...
-  return (
-    <div className="hero">
-      Hello World
-    </div>
-  );
+    // Generating component...
+    return (
+        <div className="hero">
+            Hello World
+        </div>
+    );
 }`;
 
     useEffect(() => {
@@ -68,13 +67,13 @@ const SpotlightCard: React.FC<{ children: React.ReactNode; className?: string }>
             ref={divRef}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
-            className={`relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-8 transition-colors hover:bg-white/10 ${className}`}
+            className={`relative overflow - hidden rounded - 3xl border border - white / 10 bg - white / 5 p - 8 transition - colors hover: bg - white / 10 ${className} `}
         >
             <div
                 className="pointer-events-none absolute -inset-px transition duration-300"
                 style={{
                     opacity,
-                    background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(255,182,255,0.1) 0%, transparent 40%)`
+                    background: `radial - gradient(600px circle at ${position.x}px ${position.y}px, rgba(255, 182, 255, 0.1) 0 %, transparent 40 %)`
                 }}
             />
             <div className="relative z-10">{children}</div>
