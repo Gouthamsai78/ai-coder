@@ -57,7 +57,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             />
 
             {/* Modal */}
-            <div className="fixed right-6 top-16 z-50 w-[360px] card p-0 shadow-2xl zoom-in overflow-hidden">
+            <div className="fixed inset-x-4 top-20 md:right-6 md:left-auto md:top-16 z-50 w-auto md:w-[360px] max-w-[360px] card p-0 shadow-2xl zoom-in overflow-hidden max-h-[80vh]">
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
                     <div className="flex items-center gap-2">
@@ -72,7 +72,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </button>
                 </div>
 
-                <div className="p-4 space-y-5">
+                <div className="p-4 space-y-5 overflow-y-auto max-h-[calc(80vh-56px)]">
                     {/* Provider Selection */}
                     <div className="space-y-2">
                         <label className="text-xs font-medium text-[hsl(var(--muted-foreground))]">

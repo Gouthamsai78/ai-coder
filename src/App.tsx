@@ -304,17 +304,17 @@ function AppContent() {
               setLastError(null);
               showToast('Chat history cleared (Code preserved)', 'info');
             }}
-            className="btn-ghost flex items-center gap-2 px-3 py-2 text-sm"
+            className="btn-ghost flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 text-sm"
             title="Clear Chat History (Keep Code)"
           >
             <RefreshCw className="h-4 w-4" />
-            <span>Clear</span>
+            <span className="hidden sm:inline">Clear</span>
           </button>
 
           {/* New Chat Button */}
           <button
             onClick={handleNewChat}
-            className="btn-ghost flex items-center gap-2 px-3 py-2 text-sm"
+            className="btn-ghost flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 text-sm"
             title="New Project (Reset All)"
           >
             <Plus className="h-4 w-4" />
@@ -348,7 +348,7 @@ function AppContent() {
           {/* Copy Code Button */}
           <button
             onClick={handleCopyCode}
-            className="btn-ghost flex items-center gap-2 px-3 py-2 text-sm"
+            className="btn-ghost flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 text-sm"
             title="Copy Code"
           >
             {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
@@ -357,7 +357,7 @@ function AppContent() {
 
           <button
             onClick={() => setShowLanding(true)}
-            className="btn-ghost flex items-center gap-2 px-3 py-2 text-sm"
+            className="btn-ghost flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 text-sm"
             title="Back to Home"
           >
             <Home className="h-4 w-4" />
@@ -365,7 +365,7 @@ function AppContent() {
           </button>
           <button
             onClick={handleDownload}
-            className="btn-ghost flex items-center gap-2 px-3 py-2 text-sm"
+            className="btn-ghost flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 text-sm"
             title="Download Code"
           >
             <Download className="h-4 w-4" />
@@ -373,7 +373,7 @@ function AppContent() {
           </button>
           <button
             onClick={() => setShowDeploy(true)}
-            className="btn-primary flex items-center gap-2 px-3 py-2 text-sm"
+            className="btn-primary flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 text-sm"
             title="Deploy Your App"
           >
             <Rocket className="h-4 w-4" />
@@ -381,10 +381,10 @@ function AppContent() {
           </button>
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="btn-ghost p-2"
+            className="btn-ghost p-1.5 sm:p-2"
             title="Settings"
           >
-            <Settings className="h-5 w-5" />
+            <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
         </div>
       </header>
