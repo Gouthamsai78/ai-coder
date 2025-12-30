@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://ai-coder-app.vercel.app/sitemap.xml
+Sitemap: https://aicoderbygoutham.vercel.app/sitemap.xml
