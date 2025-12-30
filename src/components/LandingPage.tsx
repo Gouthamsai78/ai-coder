@@ -1,6 +1,16 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Hero from './ui/animated-shader-hero';
-import { Sparkles, ArrowRight, Play, Terminal, Lock, Zap, Code2, Shield, Key } from 'lucide-react';
+import {
+    Sparkles,
+    ArrowRight,
+    Play,
+    Terminal,
+    Lock,
+    Zap,
+    Code2,
+    Shield,
+    Key
+} from 'lucide-react';
 
 // Typing Code Component
 const TypingCode: React.FC = () => {
@@ -134,7 +144,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                         </SpotlightCard>
 
                         {/* Card 2: Live Preview */}
-                        {/* Card 2: Live Preview */}
                         <SpotlightCard>
                             <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mb-4 md:mb-6">
                                 <Play className="text-blue-400 w-5 h-5 md:w-6 md:h-6" />
@@ -145,7 +154,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                             </p>
                         </SpotlightCard>
 
-                        {/* Card 3: Deploy */}
                         {/* Card 3: Deploy */}
                         <SpotlightCard>
                             <div className="w-10 h-10 md:w-12 md:h-12 bg-green-500/20 rounded-xl flex items-center justify-center mb-4 md:mb-6">
@@ -180,7 +188,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                         </SpotlightCard>
                     </div>
 
-                    {/* Infinite Marquee */}
                     {/* Infinite Marquee */}
                     <div className="mt-16 md:mt-32">
                         <p className="text-center text-gray-500 text-xs md:text-sm font-medium tracking-wider uppercase mb-6 md:mb-8">Trusted by developers from</p>
