@@ -1,14 +1,16 @@
 import React, { useState, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
-import { Code2, Copy, Check } from 'lucide-react';
+import { Code2, Copy, Check, MessageSquare, Play } from 'lucide-react';
 
 interface CodeEditorProps {
     code: string;
     onChange: (value: string | undefined) => void;
     isLoading?: boolean;
+    activeTab?: 'chat' | 'code' | 'preview';
+    onTabChange?: (tab: 'chat' | 'code' | 'preview') => void;
 }
 
-const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, isLoading: _isLoading }) => {
+const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, isLoading: _isLoading, activeTab, onTabChange }) => {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = useCallback(async () => {
@@ -40,6 +42,32 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, isLoading: _isL
                     </span>
                 </div>
                 <div className="flex items-center gap-2">
+                    {/* Quick Navigation Toggle (Mobile Only) */}
+                    {onTabChange && (
+                        <div className="flex items-center gap-1 glass rounded-lg p-1 lg:hidden">
+                            <button
+                                onClick={() => onTabChange('chat')}
+                                className={`p-1.5 rounded transition-all ${activeTab === 'chat' ? 'bg-[hsl(var(--primary))] text-white' : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]'}`}
+                                title="Chat"
+                            >
+                                <MessageSquare className="h-4 w-4" />
+                            </button>
+                            <button
+                                onClick={() => onTabChange('code')}
+                                className={`p-1.5 rounded transition-all ${activeTab === 'code' ? 'bg-[hsl(var(--primary))] text-white' : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]'}`}
+                                title="Code"
+                            >
+                                <Code2 className="h-4 w-4" />
+                            </button>
+                            <button
+                                onClick={() => onTabChange('preview')}
+                                className={`p-1.5 rounded transition-all ${activeTab === 'preview' ? 'bg-[hsl(var(--primary))] text-white' : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))]'}`}
+                                title="Preview"
+                            >
+                                <Play className="h-4 w-4" />
+                            </button>
+                        </div>
+                    )}
                     {/* Copy Button */}
                     <button
                         onClick={handleCopy}
@@ -49,17 +77,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, isLoading: _isL
                         {copied ? (
                             <>
                                 <Check className="h-3 w-3 text-emerald-400" />
-                                <span className="text-emerald-400">Copied</span>
+                                <span className="text-emerald-400 hidden sm:inline">Copied</span>
                             </>
                         ) : (
                             <>
                                 <Copy className="h-3 w-3 text-[hsl(var(--muted-foreground))]" />
-                                <span className="text-[hsl(var(--muted-foreground))]">Copy</span>
+                                <span className="text-[hsl(var(--muted-foreground))] hidden sm:inline">Copy</span>
                             </>
                         )}
                     </button>
                     {/* Traffic lights */}
-                    <div className="flex space-x-1.5">
+                    <div className="hidden sm:flex space-x-1.5">
                         <div className="h-3 w-3 rounded-full bg-[hsl(var(--destructive))] opacity-50"></div>
                         <div className="h-3 w-3 rounded-full bg-yellow-500/50"></div>
                         <div className="h-3 w-3 rounded-full bg-emerald-500/50"></div>

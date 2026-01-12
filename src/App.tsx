@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Settings, Download, Home, Plus, RefreshCw, Copy, Check, Rocket, MessageSquare, Code2, Play } from 'lucide-react';
+import { Settings, Download, Home, Plus, RefreshCw, Copy, Check, Rocket, MessageSquare, Play } from 'lucide-react';
 import CodeEditor from './components/CodeEditor';
 import Preview from './components/Preview';
 import SettingsModal, { AVAILABLE_MODELS } from './components/SettingsModal';
@@ -304,21 +304,21 @@ function AppContent() {
               setLastError(null);
               showToast('Chat history cleared (Code preserved)', 'info');
             }}
-            className="btn-ghost flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 text-sm"
+            className="btn-ghost flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 text-sm min-h-[44px]"
             title="Clear Chat History (Keep Code)"
           >
             <RefreshCw className="h-4 w-4" />
-            <span className="hidden sm:inline">Clear</span>
+            <span className="hidden xs:hidden sm:inline">Clear</span>
           </button>
 
           {/* New Chat Button */}
           <button
             onClick={handleNewChat}
-            className="btn-ghost flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 text-sm"
+            className="btn-ghost flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 text-sm min-h-[44px]"
             title="New Project (Reset All)"
           >
             <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">New</span>
+            <span className="hidden xs:hidden sm:inline">New</span>
           </button>
 
           {/* Retry Button (show only if there was an error) */}
@@ -428,38 +428,47 @@ function AppContent() {
         {/* Right Panel - Editor & Preview */}
         <div className={`flex-1 flex flex-col lg:flex-row gap-4 min-w-0 ${activeTab !== 'chat' ? 'flex' : 'hidden lg:flex'}`}>
           <div className={`flex-1 overflow-hidden rounded-xl glass shadow-2xl ${activeTab === 'code' ? 'flex' : 'hidden lg:flex'}`}>
-            <CodeEditor code={code} onChange={(val) => setCode(val || '')} isLoading={isLoading} />
+            <CodeEditor
+              code={code}
+              onChange={(val) => setCode(val || '')}
+              isLoading={isLoading}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
           </div>
           <div className={`flex-1 overflow-hidden rounded-xl glass shadow-2xl ${activeTab === 'preview' ? 'flex' : 'hidden lg:flex'}`}>
-            <Preview code={code} />
+            <Preview
+              code={code}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
           </div>
         </div>
       </main>
 
-      {/* Mobile Navigation */}
-      <nav className="fixed bottom-4 left-4 right-4 h-16 glass rounded-2xl flex lg:hidden items-center justify-around px-2 z-50 border border-[hsl(var(--border))] shadow-2xl">
+      {/* Mobile Toggle Navigation */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center p-1.5 gap-1 bg-black/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl z-50 lg:hidden ring-1 ring-white/10">
         <button
           onClick={() => setActiveTab('chat')}
-          className={`flex flex-col items-center justify-center w-full h-full gap-1 rounded-xl transition-all ${activeTab === 'chat' ? 'text-[hsl(var(--primary))] bg-[hsl(var(--primary))/10]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
+          className={`relative px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 min-w-[100px] flex items-center justify-center gap-2 ${activeTab === 'chat'
+            ? 'bg-white text-black shadow-lg shadow-white/20'
+            : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
         >
-          <MessageSquare className="h-5 w-5" />
-          <span className="text-[10px] font-medium">Chat</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('code')}
-          className={`flex flex-col items-center justify-center w-full h-full gap-1 rounded-xl transition-all ${activeTab === 'code' ? 'text-[hsl(var(--primary))] bg-[hsl(var(--primary))/10]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
-        >
-          <Code2 className="h-5 w-5" />
-          <span className="text-[10px] font-medium">Code</span>
+          <MessageSquare className="w-4 h-4" />
+          Chat
         </button>
         <button
           onClick={() => setActiveTab('preview')}
-          className={`flex flex-col items-center justify-center w-full h-full gap-1 rounded-xl transition-all ${activeTab === 'preview' ? 'text-[hsl(var(--primary))] bg-[hsl(var(--primary))/10]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
+          className={`relative px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 min-w-[100px] flex items-center justify-center gap-2 ${activeTab === 'preview' || activeTab === 'code' // Show preview active even if code is selected internally (fallback)
+            ? 'bg-[#0ea5e9] text-white shadow-lg shadow-[#0ea5e9]/20'
+            : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
         >
-          <Play className="h-5 w-5" />
-          <span className="text-[10px] font-medium">Preview</span>
+          <Play className="w-4 h-4" />
+          Preview
         </button>
-      </nav>
+      </div>
 
       {/* Diff Viewer Modal */}
       {pendingCode && pendingCode !== code && (

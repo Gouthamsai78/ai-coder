@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
-import { ExternalLink, Monitor } from 'lucide-react';
+import { ExternalLink, Monitor, MessageSquare, Code2, Play } from 'lucide-react';
 
 interface PreviewProps {
     code: string;
+    activeTab?: 'chat' | 'code' | 'preview';
+    onTabChange?: (tab: 'chat' | 'code' | 'preview') => void;
 }
 
-const Preview: React.FC<PreviewProps> = ({ code }) => {
+const Preview: React.FC<PreviewProps> = ({ code, activeTab, onTabChange }) => {
     const handleOpenInNewTab = () => {
         // Create a Blob with the HTML content
         const blob = new Blob([code], { type: 'text/html' });
@@ -43,14 +45,42 @@ const Preview: React.FC<PreviewProps> = ({ code }) => {
                     <Monitor className="h-4 w-4 text-emerald-600" />
                     <span className="text-sm font-medium text-gray-700">Preview</span>
                 </div>
-                <button
-                    onClick={handleOpenInNewTab}
-                    className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                    title="Open in New Tab"
-                >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Open
-                </button>
+                <div className="flex items-center gap-2">
+                    {/* Quick Navigation Toggle (Mobile Only) */}
+                    {onTabChange && (
+                        <div className="flex items-center gap-1 glass rounded-lg p-1 lg:hidden">
+                            <button
+                                onClick={() => onTabChange('chat')}
+                                className={`p-1.5 rounded transition-all ${activeTab === 'chat' ? 'bg-[hsl(var(--primary))] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                                title="Chat"
+                            >
+                                <MessageSquare className="h-4 w-4" />
+                            </button>
+                            <button
+                                onClick={() => onTabChange('code')}
+                                className={`p-1.5 rounded transition-all ${activeTab === 'code' ? 'bg-[hsl(var(--primary))] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                                title="Code"
+                            >
+                                <Code2 className="h-4 w-4" />
+                            </button>
+                            <button
+                                onClick={() => onTabChange('preview')}
+                                className={`p-1.5 rounded transition-all ${activeTab === 'preview' ? 'bg-[hsl(var(--primary))] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                                title="Preview"
+                            >
+                                <Play className="h-4 w-4" />
+                            </button>
+                        </div>
+                    )}
+                    <button
+                        onClick={handleOpenInNewTab}
+                        className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                        title="Open in New Tab"
+                    >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">Open</span>
+                    </button>
+                </div>
             </div>
 
             {/* Iframe - sandbox without allow-same-origin to prevent navigation */}
