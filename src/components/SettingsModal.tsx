@@ -1,6 +1,7 @@
 import React from 'react';
 import { Settings, X, Check } from 'lucide-react';
 import type { ApiProvider } from '../types';
+import { AI_MODELS } from '../constants/models';
 
 interface SettingsModalProps {
     apiKey: string;
@@ -14,21 +15,8 @@ interface SettingsModalProps {
     onClose: () => void;
 }
 
-export const AVAILABLE_MODELS = {
-    google: [
-        { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash Preview', description: 'Latest Gemini 3 model (Free)' },
-        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', description: 'Google\'s fast model' },
-        { id: 'gemini-2.5-flash-preview-05-20', name: 'Gemini 2.5 Flash', description: 'Advanced Gemini model' },
-        { id: 'gemini-2.5-pro-preview-05-06', name: 'Gemini 2.5 Pro Preview', description: 'Best for complex reasoning' },
-    ],
-    openrouter: [
-        { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash (Free)', description: 'Google\'s fast model via OpenRouter' },
-        { id: 'z-ai/glm-4.5-air:free', name: 'GLM-4.5 Air (Free)', description: 'Fast, free model for everyday tasks' },
-        { id: 'meta-llama/llama-3-70b-instruct', name: 'Llama 3 70B', description: 'High performance open model' },
-        { id: 'anthropic/claude-3-sonnet', name: 'Claude 3 Sonnet', description: 'Balanced performance and speed' },
-        { id: 'openai/gpt-4o', name: 'GPT-4o', description: 'Most capable model (Expensive)' },
-    ]
-};
+// Export for backward compatibility with App.tsx (will be removed after App.tsx refactor)
+export const AVAILABLE_MODELS = AI_MODELS;
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
     apiKey,
@@ -41,11 +29,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     setGithubToken,
     onClose
 }) => {
-    const models = AVAILABLE_MODELS[selectedProvider];
-
+    // When provider changes, automatically set the first model for that provider
     const handleProviderChange = (provider: ApiProvider) => {
         setSelectedProvider(provider);
-        setSelectedModel(AVAILABLE_MODELS[provider][0].id);
+        setSelectedModel(AI_MODELS[provider][0].id);
     };
 
     return (
@@ -127,7 +114,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             AI Model
                         </label>
                         <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                            {models.map((model) => (
+                            {AI_MODELS[selectedProvider].map((model) => (
                                 <button
                                     key={model.id}
                                     onClick={() => setSelectedModel(model.id)}

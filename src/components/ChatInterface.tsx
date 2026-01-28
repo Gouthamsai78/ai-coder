@@ -3,6 +3,7 @@ import { Send, Bot, User, Sparkles, Copy, Check, Paperclip, X } from 'lucide-rea
 import clsx from 'clsx';
 import type { FileAttachment } from '../types';
 import { processFile, isFileSupported, formatFileSize, getFileIcon } from '../services/fileProcessor';
+import { PROMPT_SUGGESTIONS } from '../constants/prompts';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -14,16 +15,6 @@ interface ChatInterfaceProps {
     onSendMessage: (message: string, attachments?: FileAttachment[]) => void;
     isLoading: boolean;
 }
-
-// Prompt suggestions for new users
-const PROMPT_SUGGESTIONS = [
-    { emoji: '🎯', text: 'Build a landing page for a SaaS product' },
-    { emoji: '📊', text: 'Create a dashboard with charts and stats' },
-    { emoji: '🛒', text: 'Make an e-commerce product page' },
-    { emoji: '✅', text: 'Build a todo app with local storage' },
-    { emoji: '💬', text: 'Create a chat application UI' },
-    { emoji: '🎨', text: 'Design a portfolio website' },
-];
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, isLoading }) => {
     const [input, setInput] = useState('');
