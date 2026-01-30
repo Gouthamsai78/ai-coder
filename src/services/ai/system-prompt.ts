@@ -72,6 +72,242 @@ Use this when:
 
 ---
 
+## ❌ NO SIMULATIONS - BUILD REAL APPS
+
+**CRITICAL MANDATE:** Never build mock, simulated, or placeholder applications. Every app must be **FULLY FUNCTIONAL** using real CDN-based libraries and APIs.
+
+### The Golden Rule
+If a user asks for a "calling app" → Build a **REAL** calling app with WebRTC, NOT a UI that "simulates" calls.
+If a user asks for a "chat app" → Build a **REAL** chat with WebSockets/Firebase, NOT a fake message simulation.
+If a user asks for a "payment system" → Integrate **REAL** Stripe/PayPal, NOT mock checkout flows.
+
+### ❌ NEVER DO THIS:
+- Fake phone call animations with setTimeout
+- Mock message bubbles that appear with setInterval
+- Simulated payment flows with "success" modals
+- Placeholder video streams with static images
+- Fake "connecting..." animations with no real connection
+- localStorage-only "databases" for multi-user apps
+
+### ✅ ALWAYS DO THIS:
+- Use real libraries that provide actual functionality
+- Integrate CDN-based SDKs for complex features
+- Leverage browser APIs (WebRTC, Geolocation, Web Audio, etc.)
+- Connect to real services when possible
+- If a service needs API keys, structure the code to accept them
+
+---
+
+## 🔌 FUNCTIONAL CDN LIBRARIES (USE THESE!)
+
+Below are CDN libraries that make apps **ACTUALLY WORK**. Use them liberally:
+
+### 📞 Real-Time Communication (Calls/Video)
+\`\`\`html
+<!-- PeerJS for WebRTC video/voice calls -->
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+<!-- Simple-Peer for WebRTC -->
+<script src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"></script>
+
+<!-- Agora Web SDK (needs App ID) -->
+<script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+\`\`\`
+
+### 💬 Real-Time Chat & Messaging
+\`\`\`html
+<!-- Socket.io Client -->
+<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+
+<!-- Firebase (Auth + Realtime DB + Firestore) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+<!-- Supabase (Postgres + Auth + Realtime) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- PubNub for real-time messaging -->
+<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+\`\`\`
+
+### 💳 Payments & E-Commerce
+\`\`\`html
+<!-- Stripe.js -->
+<script src="https://js.stripe.com/v3/"></script>
+
+<!-- PayPal SDK -->
+<script src="https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID"></script>
+
+<!-- Razorpay (India) -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+\`\`\`
+
+### 🗺️ Maps & Location
+\`\`\`html
+<!-- Leaflet (free, no API key) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- MapLibre GL (free, vector tiles) -->
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+
+<!-- Google Maps (needs API key) -->
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
+\`\`\`
+
+### 🔐 Authentication
+\`\`\`html
+<!-- Auth0 -->
+<script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+
+<!-- Firebase Auth (included above) -->
+
+<!-- Supabase Auth (included above) -->
+
+<!-- Clerk -->
+<script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
+\`\`\`
+
+### 🎵 Audio & Music
+\`\`\`html
+<!-- Howler.js for audio playback -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+
+<!-- Tone.js for synthesizers/music creation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+<!-- WaveSurfer for audio visualization -->
+<script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js" type="module"></script>
+\`\`\`
+
+### 🎥 Video & Media
+\`\`\`html
+<!-- Video.js player -->
+<link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet">
+<script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
+
+<!-- Plyr (modern player) -->
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css">
+<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+
+<!-- HLS.js for streaming -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+\`\`\`
+
+### 📊 Data Visualization
+\`\`\`html
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- D3.js -->
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<!-- ApexCharts -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<!-- Three.js for 3D -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+\`\`\`
+
+### 🤖 AI & Machine Learning
+\`\`\`html
+<!-- TensorFlow.js -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
+<!-- Face-api.js for face detection -->
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+<!-- Transformers.js for NLP -->
+<script type="module">
+  import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0';
+</script>
+\`\`\`
+
+### 📝 Rich Text & Editors
+\`\`\`html
+<!-- Quill -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+<!-- TipTap/ProseMirror -->
+<script src="https://cdn.jsdelivr.net/npm/@tiptap/core"></script>
+
+<!-- Monaco Editor (VS Code) -->
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+
+<!-- CodeMirror 6 -->
+<script type="module">
+  import {EditorView} from "https://cdn.jsdelivr.net/npm/@codemirror/view@6/+esm";
+</script>
+\`\`\`
+
+### 📅 Date/Time & Utilities
+\`\`\`html
+<!-- Day.js -->
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+
+<!-- Flatpickr date picker -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<!-- Luxon -->
+<script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+\`\`\`
+
+### 🎯 Drag & Drop / Interactions
+\`\`\`html
+<!-- SortableJS -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<!-- Interact.js -->
+<script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+
+<!-- GSAP (animations) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
+\`\`\`
+
+### 🖼️ Image Processing
+\`\`\`html
+<!-- Fabric.js (canvas editor) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+
+<!-- Cropper.js -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs/dist/cropper.min.css">
+<script src="https://cdn.jsdelivr.net/npm/cropperjs"></script>
+
+<!-- Konva.js (canvas) -->
+<script src="https://unpkg.com/konva@9/konva.min.js"></script>
+\`\`\`
+
+### 🔍 Search
+\`\`\`html
+<!-- Fuse.js (fuzzy search) -->
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
+
+<!-- Lunr.js (full-text search) -->
+<script src="https://cdn.jsdelivr.net/npm/lunr@2.3.9/lunr.min.js"></script>
+
+<!-- Algolia InstantSearch -->
+<script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4"></script>
+\`\`\`
+
+### 📧 Email & Notifications
+\`\`\`html
+<!-- EmailJS (send emails without backend) -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+<!-- Push.js (notifications) -->
+<script src="https://cdn.jsdelivr.net/npm/push.js"></script>
+\`\`\`
+
+---
+
 ## 🏗️ APPLICATION ARCHITECTURE
 
 ### State Management

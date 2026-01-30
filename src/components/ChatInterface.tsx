@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Copy, Check, Paperclip, X } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Copy, Check, Paperclip, X, Settings } from 'lucide-react';
 import clsx from 'clsx';
 import type { FileAttachment } from '../types';
 import { processFile, isFileSupported, formatFileSize, getFileIcon } from '../services/fileProcessor';
@@ -13,10 +13,12 @@ interface Message {
 interface ChatInterfaceProps {
     messages: Message[];
     onSendMessage: (message: string, attachments?: FileAttachment[]) => void;
+
     isLoading: boolean;
+    onOpenSettings?: () => void;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, isLoading }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, isLoading, onOpenSettings }) => {
     const [input, setInput] = useState('');
     const [copiedId, setCopiedId] = useState<number | null>(null);
     const [attachments, setAttachments] = useState<FileAttachment[]>([]);
@@ -135,9 +137,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
                             <div className="h-12 w-12 rounded-full bg-[hsl(var(--primary)/.1)] flex items-center justify-center mb-3">
                                 <Sparkles className="h-6 w-6 text-[hsl(var(--primary))]" />
                             </div>
-                            <h3 className="font-medium text-[hsl(var(--foreground))]">What would you like to build?</h3>
+                            <h3 className="font-medium text-[hsl(var(--foreground))]">Ready to build something amazing?</h3>
                             <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                                Describe your idea or attach files for context
+                                Pick a template below or describe your idea
                             </p>
                         </div>
 
@@ -147,12 +149,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
                                 <button
                                     key={idx}
                                     onClick={() => handlePromptClick(suggestion.text)}
-                                    className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--accent))] border border-transparent hover:border-[hsl(var(--border))] text-left transition-all group"
+                                    className={`flex items-center gap-3 px-4 py-3 rounded-lg border text-left transition-all group
+                                        ${idx === 0
+                                            ? 'bg-[hsl(var(--primary)/.05)] border-[hsl(var(--primary)/.2)] hover:border-[hsl(var(--primary)/.4)]'
+                                            : 'bg-[hsl(var(--secondary))] border-transparent hover:bg-[hsl(var(--accent))] hover:border-[hsl(var(--border))]'}
+                                    `}
                                 >
                                     <span className="text-lg">{suggestion.emoji}</span>
-                                    <span className="text-sm text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))] transition-colors">
-                                        {suggestion.text}
-                                    </span>
+                                    <div className="flex-1">
+                                        <span className="text-sm text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))] transition-colors">
+                                            {suggestion.text}
+                                        </span>
+                                        {idx === 0 && (
+                                            <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-[hsl(var(--primary)/.1)] text-[hsl(var(--primary))] rounded-full font-medium">Popular</span>
+                                        )}
+                                    </div>
                                 </button>
                             ))}
                         </div>
@@ -247,51 +258,71 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
                 </div>
             )}
 
-            {/* Input */}
+            {/* Input Area */}
             <form onSubmit={handleSubmit} className="p-3 border-t border-[hsl(var(--border))]">
-                <div className="relative">
+                <div className="flex items-end gap-2 bg-[hsl(var(--secondary)/.3)] p-2 rounded-xl border border-[hsl(var(--border))] focus-within:ring-2 focus-within:ring-[hsl(var(--ring))] focus-within:border-transparent transition-all shadow-sm">
+                    {/* File Upload Button - Left side like Lovable */}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        onChange={handleFileSelect}
+                        accept="image/*,.pdf,.txt,.md,.json,.html,.css,.js"
+                        multiple
+                        className="hidden"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isLoading || isProcessingFile}
+                        className="p-2 h-10 w-10 flex items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--background))] disabled:opacity-50 transition-all shrink-0"
+                        title="Add files to context"
+                        aria-label="Upload files"
+                    >
+                        {isProcessingFile ? (
+                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-[hsl(var(--muted-foreground))] border-t-transparent" />
+                        ) : (
+                            <Paperclip className="h-5 w-5" />
+                        )}
+                    </button>
+
                     <textarea
                         ref={textareaRef}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="Describe what you want to build... (Enter to send)"
-                        className="input w-full py-3 pl-4 pr-20 text-sm resize-none min-h-[48px] max-h-[120px]"
+                        placeholder="What do you want to build?"
+                        className="flex-1 bg-transparent py-2.5 px-0 text-sm resize-none min-h-[40px] max-h-[200px] focus:outline-none placeholder:text-[hsl(var(--muted-foreground)/.7)] text-[hsl(var(--foreground))]"
                         disabled={isLoading}
                         rows={1}
                     />
-                    <div className="absolute right-2 bottom-2 flex items-center gap-1">
-                        {/* File Upload Button */}
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            onChange={handleFileSelect}
-                            accept="image/*,.pdf,.txt,.md,.json,.html,.css,.js"
-                            multiple
-                            className="hidden"
-                        />
+
+                    {/* Settings Button */}
+                    {onOpenSettings && (
                         <button
                             type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isLoading || isProcessingFile}
-                            className="p-2 rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/.1)] disabled:opacity-50 transition-all"
-                            title="Attach files (images, PDFs, text)"
+                            onClick={onOpenSettings}
+                            disabled={isLoading}
+                            className="p-2 h-10 w-10 flex items-center justify-center rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--background))] transition-all shrink-0"
+                            title="Settings"
                         >
-                            <Paperclip className={clsx("h-4 w-4", isProcessingFile && "animate-pulse")} />
+                            <Settings className="h-4 w-4" />
                         </button>
-                        {/* Send Button */}
-                        <button
-                            type="submit"
-                            disabled={isLoading || (!input.trim() && attachments.length === 0)}
-                            className="p-2 rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/.1)] disabled:opacity-50 disabled:hover:bg-transparent transition-all"
-                        >
-                            <Send className="h-4 w-4" />
-                        </button>
-                    </div>
+                    )}
+
+                    {/* Send Button */}
+                    <button
+                        type="submit"
+                        disabled={isLoading || (!input.trim() && attachments.length === 0)}
+                        className={clsx(
+                            "p-2 h-10 w-10 flex items-center justify-center rounded-lg transition-all shrink-0",
+                            input.trim() || attachments.length > 0
+                                ? "bg-[hsl(var(--primary))] text-primary-foreground hover:opacity-90 shadow-sm"
+                                : "bg-[hsl(var(--muted))]/50 text-[hsl(var(--muted-foreground))] cursor-not-allowed"
+                        )}
+                    >
+                        <Send className="h-4 w-4" />
+                    </button>
                 </div>
-                <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1.5 text-center">
-                    Press Enter to send • Shift+Enter for new line • 📎 to attach files
-                </p>
             </form>
         </div>
     );

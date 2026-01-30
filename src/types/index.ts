@@ -2,7 +2,7 @@
 // Core Types
 // ============================================
 
-export type ApiProvider = 'openrouter' | 'google';
+export type ApiProvider = 'openrouter' | 'google' | 'aicoder';
 
 export interface Message {
     role: 'user' | 'assistant';
@@ -80,6 +80,7 @@ export interface ChatActions {
     retry: () => void;
     clearMessages: () => void;
     clearAll: () => void;
+    restoreMessages: (messages: Message[]) => void;
 }
 
 // ============================================

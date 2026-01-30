@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs */
 import React, { useRef, useState, useEffect } from 'react';
 import Hero from './ui/animated-shader-hero';
 import {
@@ -18,10 +19,12 @@ import {
 
 // Scroll Animation Hook
 const useScrollAnimation = () => {
-    const ref = useRef<HTMLDivElement>(null);
+    const [element, setElement] = useState<HTMLDivElement | null>(null);
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
+        if (!element) return;
+
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
@@ -32,12 +35,15 @@ const useScrollAnimation = () => {
             { threshold: 0.1, rootMargin: '50px' }
         );
 
-        if (ref.current) {
-            observer.observe(ref.current);
-        }
+        observer.observe(element);
 
         return () => observer.disconnect();
-    }, []);
+    }, [element]);
+
+    // Return a callback ref instead of a ref object
+    const ref = (node: HTMLDivElement | null) => {
+        setElement(node);
+    };
 
     return { ref, isVisible };
 };
@@ -95,6 +101,7 @@ const TypingCode: React.FC = () => {
         }, 50);
 
         return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (

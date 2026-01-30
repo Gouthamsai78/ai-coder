@@ -33,6 +33,35 @@
   --input: 0 0% 14%;
   --ring: 217 91% 60%;
   --radius: 0.75rem;
+
+  /* Lovable Gradient Colors */
+  --gradient-orange: 16 100% 65%;
+  --gradient-pink: 330 100% 60%;
+  --gradient-blue: 200 100% 60%;
+}
+
+/* Light Theme */
+.light,
+[data-theme="light"] {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  --primary: 217 91% 55%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 10%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 0 0% 96%;
+  --accent-foreground: 0 0% 10%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 90%;
+  --input: 0 0% 100%;
+  --ring: 217 91% 55%;
 }
 
 html {
@@ -243,4 +272,133 @@ body {
 .focus-ring:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Lovable-Style Gradient Background
+   ─────────────────────────────────────────────────────────────── */
+
+@keyframes gradient-shift {
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  25% {
+    transform: translate(10%, 5%) scale(1.05);
+  }
+
+  50% {
+    transform: translate(-5%, 10%) scale(0.95);
+  }
+
+  75% {
+    transform: translate(-10%, -5%) scale(1.02);
+  }
+}
+
+.gradient-bg-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gradient-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.7;
+  will-change: transform;
+}
+
+.gradient-blob-1 {
+  width: 60%;
+  height: 60%;
+  top: 20%;
+  left: 20%;
+  background: linear-gradient(135deg,
+      hsl(var(--gradient-orange)) 0%,
+      hsl(var(--gradient-pink)) 100%);
+  animation: gradient-shift 8s ease-in-out infinite;
+}
+
+.gradient-blob-2 {
+  width: 50%;
+  height: 50%;
+  bottom: 10%;
+  right: 10%;
+  background: linear-gradient(135deg,
+      hsl(var(--gradient-pink)) 0%,
+      hsl(var(--gradient-blue)) 100%);
+  animation: gradient-shift 10s ease-in-out infinite reverse;
+}
+
+.gradient-blob-3 {
+  width: 40%;
+  height: 40%;
+  top: 40%;
+  right: 30%;
+  background: linear-gradient(135deg,
+      hsl(var(--gradient-blue)) 0%,
+      hsl(var(--gradient-orange) / 0.8) 100%);
+  animation: gradient-shift 12s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Bottom Sheet Modal (Mobile)
+   ─────────────────────────────────────────────────────────────── */
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+.bottom-sheet {
+  animation: slide-up 300ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Light Theme Specific Overrides
+   ─────────────────────────────────────────────────────────────── */
+
+.light .glass,
+[data-theme="light"] .glass {
+  background: hsl(var(--card) / 0.9);
+  border: 1px solid hsl(var(--border));
+}
+
+.light ::-webkit-scrollbar-thumb,
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Mobile Touch Optimizations
+   ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+
+  /* Ensure minimum touch target size */
+  button,
+  [role="button"],
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Disable hover effects on touch devices */
+  @media (hover: none) {
+    .btn-ghost:hover {
+      background: transparent;
+    }
+  }
 }

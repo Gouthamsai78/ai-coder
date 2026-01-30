@@ -10,7 +10,7 @@ interface CodeEditorProps {
     onTabChange?: (tab: 'chat' | 'code' | 'preview') => void;
 }
 
-const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, isLoading: _isLoading, activeTab, onTabChange }) => {
+const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, activeTab, onTabChange }) => {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = useCallback(async () => {

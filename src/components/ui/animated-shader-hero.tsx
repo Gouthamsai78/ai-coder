@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useRef, useEffect, useState } from 'react';
 import './animated-shader-hero.css';
 
@@ -384,6 +385,7 @@ const useShaderBackground = () => {
                 rendererRef.current.reset();
             }
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return canvasRef;
