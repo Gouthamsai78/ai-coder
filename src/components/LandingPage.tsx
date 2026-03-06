@@ -43,7 +43,7 @@ const useScrollAnimation = () => {
 };
 
 // Magnetic Link Component
-const MagneticLink: React.FC<{ href: string; children: React.ReactNode; className?: string }> = ({ href, children, className = "" }) => {
+const MagneticLink: React.FC<{ href: string; children: React.ReactNode; className?: string; target?: string; rel?: string }> = ({ href, children, className = "", target, rel }) => {
     const linkRef = useRef<HTMLAnchorElement>(null);
     const [position, setPosition] = useState({ x: 0, y: 0 });
 
@@ -63,6 +63,8 @@ const MagneticLink: React.FC<{ href: string; children: React.ReactNode; classNam
         <a
             ref={linkRef}
             href={href}
+            target={target}
+            rel={rel}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
