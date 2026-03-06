@@ -469,7 +469,7 @@ const Hero: React.FC<HeroProps> = ({
     const canvasRef = useShaderBackground();
 
     return (
-        <div className={`relative w-full h-screen overflow-hidden bg-black ${className}`}>
+        <div className={`relative w-full min-h-[85vh] lg:min-h-[95vh] lg:max-h-[850px] overflow-hidden bg-black ${className}`}>
 
 
             <canvas
@@ -477,7 +477,7 @@ const Hero: React.FC<HeroProps> = ({
                 className="absolute inset-0 w-full h-full object-contain touch-none opacity-80"
             />
 
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-white">
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pt-10 lg:pt-20 text-white">
                 {trustBadge && (
                     <div className="mb-4 sm:mb-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                         <div className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full text-[10px] sm:text-xs font-medium hover:bg-white/10 transition-colors">

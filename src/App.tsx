@@ -65,9 +65,9 @@ function AppContent() {
             <img src="/logo.jpg" alt="AI Coder Logo" className="hfull w-full object-cover" />
           </div>
           <div>
-            <h1 className="font-semibold text-base tracking-tight hidden sm:block">
+            <span className="font-semibold text-base tracking-tight hidden sm:block">
               AI Coder
-            </h1>
+            </span>
             <span className="text-[10px] text-[hsl(var(--muted-foreground))] hidden sm:block">by Goutham Sai</span>
           </div>
         </div>

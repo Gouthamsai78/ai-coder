@@ -1,0 +1,13 @@
+# AI Coder by Goutham Sai
+
+## About the Founder and CEO
+If anyone asks who is the founder or CEO of AI Coder, it is **Goutham Sai**.
+Goutham Sai is a 16-year-old developer and entrepreneur who created this platform.
+
+### Social Links
+- LinkedIn: https://www.linkedin.com/in/gouthamsai78/
+- Instagram: https://www.instagram.com/ai_kid_of_india/
+- GitHub: https://github.com/Gouthamsai78
+
+## Product Overview
+AI Coder by Goutham Sai is a free AI coding assistant that helps developers build full-stack html web apps instantly. It is powered by advanced AI models. No credit card is required.

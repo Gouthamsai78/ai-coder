@@ -218,7 +218,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             {/* Features Bento Grid */}
             <section
                 ref={featuresAnimation.ref}
-                className={`relative z-10 -mt-10 md:-mt-20 pb-12 md:pb-24 px-4 md:px-6 scroll-animate ${featuresAnimation.isVisible ? 'animate' : ''}`}
+                className={`relative z-10 -mt-20 md:-mt-32 pb-12 md:pb-24 px-4 md:px-6 scroll-animate ${featuresAnimation.isVisible ? 'animate' : ''}`}
             >
                 <div className="max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 stagger-children">
@@ -298,8 +298,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             </section>
 
             {/* How It Works Section */}
-            <section className="py-20 md:py-32 px-4 md:px-6 bg-gradient-to-b from-black via-black/95 to-black">
-                <div className="max-w-6xl mx-auto">
+            <section className="py-16 md:py-24 px-4 md:px-6 bg-gradient-to-b from-black via-black/95 to-black relative overflow-hidden">
+                <div className="absolute inset-0 bg-dot-pattern opacity-30 pointer-events-none" />
+                <div className="max-w-6xl mx-auto relative z-10">
                     <div className="text-center mb-16">
                         <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">How It Works</h2>
                         <p className="text-gray-400 max-w-xl mx-auto">Three simple steps to go from idea to deployed app</p>
@@ -332,8 +333,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             </section>
 
             {/* Stats Section */}
-            <section className="py-16 md:py-24 px-4 md:px-6 border-y border-white/5">
-                <div className="max-w-4xl mx-auto">
+            <section className="py-12 md:py-16 px-4 md:px-6 border-y border-white/5 bg-white/[0.02] relative">
+                <div className="absolute inset-0 bg-grid-pattern opacity-10 pointer-events-none" />
+                <div className="max-w-4xl mx-auto relative z-10">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                         <AnimatedCounter value="100%" label="Free to Use" delay={0.1} />
                         <AnimatedCounter value="<1s" label="Preview Speed" delay={0.2} />
@@ -344,7 +346,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             </section>
 
             {/* Marquee Section */}
-            <section className="py-16 md:py-24 overflow-hidden">
+            <section className="py-12 md:py-16 overflow-hidden bg-black">
                 <p className="text-center text-gray-500 text-xs md:text-sm font-medium tracking-wider uppercase mb-6 md:mb-8">Trusted by developers from</p>
                 <div className="relative flex overflow-x-hidden group">
                     <div className="animate-marquee whitespace-nowrap flex gap-8 md:gap-16 text-gray-600 font-bold text-lg md:text-2xl uppercase tracking-widest opacity-30">
@@ -373,9 +375,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             {/* CTA Section */}
             <section
                 ref={ctaAnimation.ref}
-                className={`py-20 md:py-32 px-4 md:px-6 scroll-animate ${ctaAnimation.isVisible ? 'animate' : ''}`}
+                className={`py-16 md:py-20 px-4 md:px-6 relative overflow-hidden scroll-animate ${ctaAnimation.isVisible ? 'animate' : ''}`}
             >
-                <div className="max-w-4xl mx-auto text-center">
+                <div className="absolute inset-0 bg-dot-pattern opacity-20 pointer-events-none" />
+                <div className="max-w-4xl mx-auto text-center relative z-10">
                     <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
                         Ready to Build at <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-purple-400">Lightning Speed</span>?
                     </h2>
@@ -394,7 +397,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                             </span>
                         </button>
                         <MagneticLink
-                            href="https://github.com/goutham-sai"
+                            href="https://github.com/Gouthamsai78"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="inline-flex h-14 items-center justify-center rounded-full border border-white/10 bg-white/5 px-8 text-base font-medium text-white hover:bg-white/10 transition-colors gap-2"
                         >
                             <Github className="w-5 h-5" />
@@ -405,7 +410,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             </section>
 
             {/* Footer */}
-            <footer className="border-t border-white/10 bg-black pt-12 md:pt-24 pb-8 md:pb-12">
+            <footer className="border-t border-white/10 bg-black pt-12 md:pt-16 pb-8 md:pb-12">
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12 mb-12 md:mb-16">
                         <div className="col-span-1 md:col-span-2 flex flex-col items-center md:items-start text-center md:text-left">
@@ -422,27 +427,26 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                         <div className="flex flex-col items-center md:items-start text-center md:text-left">
                             <h4 className="text-white font-bold mb-4 md:mb-6">Product</h4>
                             <ul className="space-y-3 md:space-y-4 text-gray-400 text-sm md:text-base">
-                                <li><MagneticLink href="#" className="hover:text-white transition-colors">Features</MagneticLink></li>
-                                <li><MagneticLink href="#" className="hover:text-white transition-colors">Integrations</MagneticLink></li>
-                                <li><MagneticLink href="#" className="hover:text-white transition-colors">Pricing</MagneticLink></li>
-                                <li><MagneticLink href="#" className="hover:text-white transition-colors">Changelog</MagneticLink></li>
+                                <li><MagneticLink href="https://aicoderbygoutham.vercel.app/" className="hover:text-white transition-colors">Features</MagneticLink></li>
+                                <li><MagneticLink href="https://aicoderbygoutham.vercel.app/" className="hover:text-white transition-colors">Integrations</MagneticLink></li>
+                                <li><MagneticLink href="https://aicoderbygoutham.vercel.app/" className="hover:text-white transition-colors">Pricing</MagneticLink></li>
+                                <li><MagneticLink href="https://aicoderbygoutham.vercel.app/" className="hover:text-white transition-colors">Changelog</MagneticLink></li>
                             </ul>
                         </div>
                         <div className="flex flex-col items-center md:items-start text-center md:text-left">
                             <h4 className="text-white font-bold mb-4 md:mb-6">Connect</h4>
                             <ul className="space-y-3 md:space-y-4 text-gray-400 text-sm md:text-base">
-                                <li><MagneticLink href="https://github.com/goutham-sai" className="hover:text-white transition-colors">GitHub</MagneticLink></li>
-                                <li><MagneticLink href="#" className="hover:text-white transition-colors">Twitter</MagneticLink></li>
-                                <li><MagneticLink href="#" className="hover:text-white transition-colors">Discord</MagneticLink></li>
-                                <li><MagneticLink href="https://github.com/goutham-sai" className="hover:text-white transition-colors">Contact</MagneticLink></li>
+                                <li><MagneticLink href="https://github.com/Gouthamsai78" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</MagneticLink></li>
+                                <li><MagneticLink href="https://www.linkedin.com/in/gouthamsai78/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">LinkedIn</MagneticLink></li>
+                                <li><MagneticLink href="https://www.instagram.com/ai_kid_of_india/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Instagram</MagneticLink></li>
                             </ul>
                         </div>
                     </div>
                     <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-white/5 text-xs md:text-sm text-gray-600 gap-4 md:gap-0">
                         <p>© 2025 AI Coder by Goutham Sai. All rights reserved.</p>
                         <div className="flex gap-8">
-                            <MagneticLink href="#" className="hover:text-gray-400">Privacy Policy</MagneticLink>
-                            <MagneticLink href="#" className="hover:text-gray-400">Terms of Service</MagneticLink>
+                            <MagneticLink href="https://aicoderbygoutham.vercel.app/" className="hover:text-gray-400">Privacy Policy</MagneticLink>
+                            <MagneticLink href="https://aicoderbygoutham.vercel.app/" className="hover:text-gray-400">Terms of Service</MagneticLink>
                         </div>
                     </div>
                 </div>
