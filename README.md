@@ -135,7 +135,7 @@ Type what you want to create:
 - Click **🚀 Deploy** button
 - Choose CodePen, GitHub Gist, or New Tab
 - Share your creation with the world!
-
+ 
 ---
 
 ## 📁 Project Structure
@@ -216,6 +216,8 @@ npm run lint     # Run ESLint
 - [x] Deploy to CodePen/GitHub Gist
 - [x] Visual diff system
 - [x] Enhanced AI prompting for complex apps
+- [x] Added new search option to search the internet
+- [x] Added new llms out of the box  
 
 ### 🔜 Coming Soon
 - [ ] GitHub Pages deployment (OAuth)
@@ -246,7 +248,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## 📬 Contact
 
 - **GitHub Issues**: [Report bugs or request features](https://github.com/Gouthamsai78/ai-coder/issues)
-- **Email**: gouthamsai78@gmail.com
+- **Email**: gouthamsai480@gmail.com
 
 ---
 

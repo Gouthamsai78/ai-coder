@@ -60,8 +60,8 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
             pushToHistory();
         }
 
-        // Temporary loading message
-        setMessages(prev => [...prev, { role: 'assistant', content: '⏳ Generating code...' }]);
+        // Loading message — will be replaced by onStatus with real activity
+        setMessages(prev => [...prev, { role: 'assistant', content: '⚡ Generating...' }]);
 
         try {
             let accumulatedCode = '';
@@ -78,14 +78,27 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
                     }
                 },
                 apiSettings.provider,
-                attachments
+                attachments,
+                // Live status updates in chat
+                (status) => {
+                    setMessages(prev => {
+                        const updated = [...prev];
+                        updated[updated.length - 1] = { role: 'assistant', content: status };
+                        return updated;
+                    });
+                },
+                apiSettings.webSearchEnabled
             );
 
             if (isDefaultCode) {
                 setCode(result.code);
                 setMessages(prev => {
                     const updated = [...prev];
-                    updated[updated.length - 1] = { role: 'assistant', content: result.summary };
+                    updated[updated.length - 1] = {
+                        role: 'assistant',
+                        content: result.summary,
+                        searchData: result.searchData,
+                    };
                     return updated;
                 });
                 showToast('Code generated successfully!', 'success');
@@ -95,7 +108,8 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
                     const updated = [...prev];
                     updated[updated.length - 1] = {
                         role: 'assistant',
-                        content: result.summary + '\n\n📝 Review the diff and click Apply to accept changes.'
+                        content: result.summary + '\n\n📝 Review the diff and click Apply to accept changes.',
+                        searchData: result.searchData,
                     };
                     return updated;
                 });

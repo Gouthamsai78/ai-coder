@@ -173,6 +173,8 @@ function AppContent() {
           setSelectedProvider={apiSettings.setProvider}
           githubToken={apiSettings.settings.githubToken}
           setGithubToken={apiSettings.setGithubToken}
+          webSearchEnabled={apiSettings.settings.webSearchEnabled}
+          setWebSearchEnabled={apiSettings.setWebSearchEnabled}
           onClose={navigation.closeSettings}
         />
       )}

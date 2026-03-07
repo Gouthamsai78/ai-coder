@@ -7,6 +7,10 @@ export type ApiProvider = 'openrouter' | 'google';
 export interface Message {
     role: 'user' | 'assistant';
     content: string;
+    searchData?: {
+        query: string;
+        results: { title: string; url: string; snippet: string }[];
+    };
 }
 
 export interface ModelOption {
@@ -33,6 +37,7 @@ export interface ApiSettings {
     apiKey: string;
     model: string;
     githubToken: string;
+    webSearchEnabled: boolean;
 }
 
 export interface EditorState {

@@ -8,8 +8,8 @@ export function formatApiError(error: unknown): string {
     if (message.includes('401')) {
         return 'Invalid API key. Please check your settings.';
     }
-    if (message.includes('429')) {
-        return 'Rate limit exceeded. Please wait a moment and try again.';
+    if (message.includes('429') || message.toLowerCase().includes('resource_exhausted')) {
+        return 'Rate limit exceeded. Try disabling Web Search in Settings, or wait a moment and retry.';
     }
     if (message.includes('400')) {
         return 'Bad request. The model may not support this request format.';

@@ -15,6 +15,7 @@ import OpenAI from 'openai';
 import { GoogleGenerativeAI, type Part } from '@google/generative-ai';
 import type { ApiProvider, FileAttachment } from '../types';
 import { SYSTEM_PROMPT } from './ai/system-prompt';
+import { shouldSearch, searchWeb } from './search';
 
 // ============================================
 // Provider Implementations
@@ -30,7 +31,8 @@ const generateWithGoogleAI = async (
     messages: { role: 'user' | 'assistant'; content: string }[],
     currentCode: string,
     onChunk: (chunk: string) => void,
-    attachments?: FileAttachment[]
+    attachments?: FileAttachment[],
+    searchContext?: string
 ): Promise<{ code: string; summary: string }> => {
     // Initialize the Google Generative AI client
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -63,12 +65,12 @@ const generateWithGoogleAI = async (
     // Build prompt parts (text + attachments)
     const promptParts: Part[] = [];
 
-    // Add text prompt
+    // Add text prompt (+ web search context if available)
     promptParts.push({
         text: `
 Current Code:
 ${currentCode}
-
+${searchContext || ''}
 Based on the conversation above, generate the COMPLETE updated HTML file. Always output the full file.
 `
     });
@@ -131,7 +133,8 @@ const generateWithOpenRouter = async (
     messages: { role: 'user' | 'assistant'; content: string }[],
     currentCode: string,
     onChunk: (chunk: string) => void,
-    attachments?: FileAttachment[]
+    attachments?: FileAttachment[],
+    searchContext?: string
 ): Promise<{ code: string; summary: string }> => {
     const openai = new OpenAI({
         apiKey: apiKey,
@@ -163,7 +166,7 @@ const generateWithOpenRouter = async (
                 content: `
 Current Code:
 ${currentCode}
-${attachmentContext}
+${attachmentContext}${searchContext || ''}
 Based on the conversation above, generate the COMPLETE updated HTML file. Always output the full file.
 `,
             },
@@ -219,8 +222,11 @@ const processResponse = (
 
 /**
  * Main code generation function
- * Routes to the appropriate AI provider and handles streaming
- * 
+/**
+ * Main code generation function
+ * Routes to the appropriate AI provider and handles streaming.
+ * Automatically enriches prompts with Tavily web search when needed.
+ *
  * @param apiKey - API key for the selected provider
  * @param model - Model ID to use
  * @param messages - Conversation history
@@ -237,30 +243,76 @@ export const generateCodeStream = async (
     currentCode: string,
     onChunk: (chunk: string) => void,
     provider: ApiProvider = 'openrouter',
-    attachments?: FileAttachment[]
-): Promise<{ code: string; summary: string }> => {
-    try {
-        if (provider === 'google') {
-            return await generateWithGoogleAI(
-                apiKey,
-                model,
-                messages,
-                currentCode,
-                onChunk,
-                attachments
-            );
+    attachments?: FileAttachment[],
+    onStatus?: (status: string) => void,
+    webSearchEnabled?: boolean
+): Promise<{ code: string; summary: string; searchData?: { query: string; results: { title: string; url: string; snippet: string }[] } }> => {
+    // Extract the latest user message for search context detection
+    const latestUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || '';
+
+    // Only search when the toggle is ON and the prompt needs it
+    let searchContextStr: string | undefined;
+    let searchData: { query: string; results: { title: string; url: string; snippet: string }[] } | undefined;
+
+    if (webSearchEnabled && shouldSearch(latestUserMessage)) {
+        onStatus?.('🔍 Searching the web...');
+        const searchResult = await searchWeb(latestUserMessage);
+        if (searchResult) {
+            searchContextStr = searchResult.context;
+            searchData = { query: searchResult.query, results: searchResult.results };
+            onStatus?.(`✅ Found ${searchResult.results.length} results — generating code...`);
         } else {
-            return await generateWithOpenRouter(
-                apiKey,
-                model,
-                messages,
-                currentCode,
-                onChunk,
-                attachments
-            );
+            onStatus?.('⚡ Generating code...');
         }
-    } catch (error) {
-        console.error('Error generating code:', error);
-        throw error;
+    } else {
+        onStatus?.('⚡ Generating code...');
     }
+
+    const MAX_RETRIES = 3;
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+            let result;
+            if (provider === 'google') {
+                result = await generateWithGoogleAI(
+                    apiKey,
+                    model,
+                    messages,
+                    currentCode,
+                    onChunk,
+                    attachments,
+                    searchContextStr
+                );
+            } else {
+                result = await generateWithOpenRouter(
+                    apiKey,
+                    model,
+                    messages,
+                    currentCode,
+                    onChunk,
+                    attachments,
+                    searchContextStr
+                );
+            }
+            return { ...result, searchData };
+        } catch (error) {
+            lastError = error;
+            const message = error instanceof Error ? error.message : String(error);
+            const isRateLimit = message.includes('429') || message.toLowerCase().includes('rate limit') || message.toLowerCase().includes('resource_exhausted');
+
+            if (isRateLimit && attempt < MAX_RETRIES - 1) {
+                const delay = Math.pow(2, attempt + 1) * 1000;
+                onStatus?.(`⏳ Rate limited. Retrying in ${delay / 1000}s...`);
+                console.warn(`Rate limited (attempt ${attempt + 1}/${MAX_RETRIES}). Retrying in ${delay / 1000}s...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue;
+            }
+
+            console.error('Error generating code:', error);
+            throw error;
+        }
+    }
+
+    throw lastError;
 };

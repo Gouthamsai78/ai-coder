@@ -29,6 +29,15 @@ export function useApiSettings() {
         ''
     );
 
+    const [webSearchRaw, setWebSearchRaw] = useLocalStorageString(
+        STORAGE_KEYS.WEB_SEARCH_ENABLED,
+        'false'
+    );
+
+    const setWebSearchEnabled = useCallback((enabled: boolean) => {
+        setWebSearchRaw(enabled ? 'true' : 'false');
+    }, [setWebSearchRaw]);
+
     // When provider changes, reset to default model for that provider
     const setProvider = useCallback((newProvider: ApiProvider) => {
         setProviderRaw(newProvider);
@@ -40,6 +49,7 @@ export function useApiSettings() {
         apiKey,
         model,
         githubToken,
+        webSearchEnabled: webSearchRaw === 'true',
     };
 
     return {
@@ -48,6 +58,7 @@ export function useApiSettings() {
         setApiKey,
         setModel,
         setGithubToken,
+        setWebSearchEnabled,
         hasApiKey: apiKey.length > 0,
     };
 }

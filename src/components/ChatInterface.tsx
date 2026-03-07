@@ -1,14 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Copy, Check, Paperclip, X } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Copy, Check, Paperclip, X, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
-import type { FileAttachment } from '../types';
+import type { FileAttachment, Message } from '../types';
 import { processFile, isFileSupported, formatFileSize, getFileIcon } from '../services/fileProcessor';
 import { PROMPT_SUGGESTIONS } from '../constants/prompts';
-
-interface Message {
-    role: 'user' | 'assistant';
-    content: string;
-}
 
 interface ChatInterfaceProps {
     messages: Message[];
@@ -19,6 +14,7 @@ interface ChatInterfaceProps {
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, isLoading }) => {
     const [input, setInput] = useState('');
     const [copiedId, setCopiedId] = useState<number | null>(null);
+    const [expandedSearch, setExpandedSearch] = useState<number | null>(null);
     const [attachments, setAttachments] = useState<FileAttachment[]>([]);
     const [isProcessingFile, setIsProcessingFile] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -183,6 +179,48 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
                                     : "bg-[hsl(var(--secondary))] text-[hsl(var(--foreground))] rounded-bl-sm"
                             )}>
                                 {msg.content}
+
+                                {/* Search Results Dropdown */}
+                                {msg.role === 'assistant' && msg.searchData && msg.searchData.results.length > 0 && (
+                                    <div className="mt-2 border-t border-[hsl(var(--border)/.5)] pt-2">
+                                        <button
+                                            onClick={() => setExpandedSearch(expandedSearch === idx ? null : idx)}
+                                            className="flex items-center gap-1.5 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors w-full"
+                                        >
+                                            <span>🔍</span>
+                                            <span>Searched: "{msg.searchData.query.slice(0, 40)}{msg.searchData.query.length > 40 ? '...' : ''}"</span>
+                                            <span className="text-[10px] opacity-70">({msg.searchData.results.length} results)</span>
+                                            <ChevronDown className={clsx(
+                                                "h-3 w-3 ml-auto transition-transform duration-200",
+                                                expandedSearch === idx && "rotate-180"
+                                            )} />
+                                        </button>
+
+                                        {expandedSearch === idx && (
+                                            <div className="mt-2 space-y-1.5 max-h-48 overflow-y-auto">
+                                                {msg.searchData.results.map((result, rIdx) => (
+                                                    <a
+                                                        key={rIdx}
+                                                        href={result.url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="block px-2.5 py-2 rounded-md bg-[hsl(var(--card))] border border-[hsl(var(--border)/.5)] hover:border-[hsl(var(--primary)/.3)] transition-colors"
+                                                    >
+                                                        <div className="text-xs font-medium text-[hsl(var(--foreground))] truncate">
+                                                            {result.title}
+                                                        </div>
+                                                        <div className="text-[10px] text-[hsl(var(--primary))] truncate mt-0.5">
+                                                            {result.url}
+                                                        </div>
+                                                        <div className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1 line-clamp-2">
+                                                            {result.snippet}
+                                                        </div>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             {/* Copy button on hover */}
                             <button

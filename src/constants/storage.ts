@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
     SAVED_CODE: 'saved_code',
     GITHUB_TOKEN: 'github_token',
     HAS_VISITED: 'has_visited_app',
+    WEB_SEARCH_ENABLED: 'web_search_enabled',
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];

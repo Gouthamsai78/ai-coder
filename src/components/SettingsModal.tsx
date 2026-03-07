@@ -12,6 +12,8 @@ interface SettingsModalProps {
     setSelectedProvider: (provider: ApiProvider) => void;
     githubToken: string;
     setGithubToken: (token: string) => void;
+    webSearchEnabled: boolean;
+    setWebSearchEnabled: (enabled: boolean) => void;
     onClose: () => void;
 }
 
@@ -27,6 +29,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     setSelectedProvider,
     githubToken,
     setGithubToken,
+    webSearchEnabled,
+    setWebSearchEnabled,
     onClose
 }) => {
     // When provider changes, automatically set the first model for that provider
@@ -132,6 +136,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     )}
                                 </button>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* Web Search Toggle */}
+                    <div className="space-y-2 pt-2 border-t border-[hsl(var(--border))]">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <label className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                                    🔍 Web Search
+                                </label>
+                                <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-0.5">
+                                    Search the web for context before generating
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+                                className={`relative w-10 h-[22px] rounded-full transition-colors duration-200 ${webSearchEnabled
+                                    ? 'bg-[hsl(var(--primary))]'
+                                    : 'bg-[hsl(var(--secondary))]'
+                                    }`}
+                            >
+                                <span
+                                    className={`absolute top-[3px] w-4 h-4 rounded-full bg-white transition-transform duration-200 ${webSearchEnabled ? 'translate-x-[22px]' : 'translate-x-[3px]'
+                                        }`}
+                                />
+                            </button>
                         </div>
                     </div>
 
