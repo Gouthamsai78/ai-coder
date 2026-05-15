@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Settings, Download, Home, Plus, RefreshCw, Copy, Check, Rocket, MessageSquare, Play } from 'lucide-react';
+import { analytics } from './utils/analytics';
 
 // Components
 import CodeEditor from './components/CodeEditor';
@@ -49,6 +50,7 @@ function AppContent() {
     chat.clearAll();
     editor.reset();
     showToast('Started new chat (Reset All)', 'info');
+    analytics.track('new_chat');
   };
 
   // Render landing if needed
@@ -76,6 +78,7 @@ function AppContent() {
           <button
             onClick={() => {
               chat.clearMessages();
+              analytics.track('clear_chat');
             }}
             className="btn-ghost flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 text-sm min-h-[44px]"
             title="Clear Chat History (Keep Code)"

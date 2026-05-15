@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Rocket, Github, Code2, Zap, ExternalLink, Copy, Check, Loader2, AlertCircle } from 'lucide-react';
 import { createCodePenData, deployToGitHubGist, type DeployResult } from '../services/deploy';
+import { analytics } from '../utils/analytics';
 
 interface DeployModalProps {
     code: string;
@@ -27,10 +28,12 @@ const DeployModal: React.FC<DeployModalProps> = ({ code, githubToken, onClose, o
     }, [onClose]);
 
     const handleCodePenDeploy = () => {
+        analytics.track('deploy_clicked', { platform: 'codepen' });
         codePenFormRef.current?.submit();
     };
 
     const handleStackBlitzDeploy = () => {
+        analytics.track('deploy_clicked', { platform: 'new_tab' });
         // Create blob URL for the HTML and open in new tab
         const blob = new Blob([code], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
@@ -46,15 +49,18 @@ const DeployModal: React.FC<DeployModalProps> = ({ code, githubToken, onClose, o
             return;
         }
 
+        analytics.track('deploy_clicked', { platform: 'github_gist' });
         setDeployStatus('loading');
         const result = await deployToGitHubGist(code, githubToken);
 
         if (result.success) {
             setDeployStatus('success');
             setDeployResult(result);
+            analytics.track('deploy_success', { platform: 'github_gist' });
         } else {
             setDeployStatus('error');
             setDeployResult(result);
+            analytics.track('deploy_failed', { platform: 'github_gist', error: result.error });
         }
     };
 

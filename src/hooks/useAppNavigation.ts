@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { storage } from '../utils/storage';
 import { STORAGE_KEYS } from '../constants/storage';
+import { analytics } from '../utils/analytics';
 import type { ActiveTab } from '../types';
 
 /**
@@ -15,18 +16,29 @@ export function useAppNavigation() {
     };
 
     const [showLanding, setShowLanding] = useState(!hasUsedBefore());
-    const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
+    const [activeTab, setActiveTabState] = useState<ActiveTab>('chat');
+    const setActiveTab = useCallback((tab: ActiveTab) => {
+        analytics.track('tab_changed', { tab });
+        setActiveTabState(tab);
+    }, []);
     const [showSettings, setShowSettings] = useState(false);
     const [showDeploy, setShowDeploy] = useState(false);
 
     const completeLanding = useCallback(() => {
         storage.setString(STORAGE_KEYS.HAS_VISITED, 'true');
         setShowLanding(false);
+        analytics.track('landing_completed');
     }, []);
 
-    const openSettings = useCallback(() => setShowSettings(true), []);
+    const openSettings = useCallback(() => {
+        setShowSettings(true);
+        analytics.track('settings_opened');
+    }, []);
     const closeSettings = useCallback(() => setShowSettings(false), []);
-    const openDeploy = useCallback(() => setShowDeploy(true), []);
+    const openDeploy = useCallback(() => {
+        setShowDeploy(true);
+        analytics.track('deploy_opened');
+    }, []);
     const closeDeploy = useCallback(() => setShowDeploy(false), []);
     const goToLanding = useCallback(() => setShowLanding(true), []);
 

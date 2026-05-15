@@ -3,6 +3,7 @@ import { useLocalStorage } from './useLocalStorage';
 import { STORAGE_KEYS } from '../constants/storage';
 import { generateCodeStream } from '../services/ai';
 import { formatApiError } from '../utils/errors';
+import { analytics } from '../utils/analytics';
 import { useToast } from '../components/Toast';
 import type { Message, FileAttachment, ChatState, ChatActions, ApiSettings } from '../types';
 
@@ -35,6 +36,10 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
         message: string,
         attachments?: FileAttachment[]
     ) => {
+        analytics.track('send_message', {
+            has_attachments: attachments?.length || 0,
+            attachment_types: attachments?.map(a => a.type).join(','),
+        });
         // Check for API key
         if (!apiSettings.apiKey) {
             const providerName = apiSettings.provider === 'google'
@@ -102,6 +107,13 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
                     return updated;
                 });
                 showToast('Code generated successfully!', 'success');
+                analytics.track('code_generated', {
+                    model: apiSettings.model,
+                    provider: apiSettings.provider,
+                    is_first_build: true,
+                    has_attachments: attachments?.length || 0,
+                    web_search: !!result.searchData,
+                });
             } else {
                 setPendingCode(result.code);
                 setMessages(prev => {
@@ -114,6 +126,13 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
                     return updated;
                 });
                 showToast('Review the diff before applying', 'info');
+                analytics.track('code_generated', {
+                    model: apiSettings.model,
+                    provider: apiSettings.provider,
+                    is_first_build: false,
+                    has_attachments: attachments?.length || 0,
+                    web_search: !!result.searchData,
+                });
             }
         } catch (error) {
             const friendlyError = formatApiError(error);
@@ -127,6 +146,10 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
             }]);
 
             showToast(friendlyError, 'error');
+            analytics.track('generation_error', {
+                error_type: friendlyError,
+                provider: apiSettings.provider,
+            });
         } finally {
             setIsLoading(false);
         }
@@ -135,9 +158,10 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
     const retry = useCallback(() => {
         if (lastPrompt && !isLoading) {
             setMessages(prev => prev.slice(0, -2));
+            analytics.track('retry', { provider: apiSettings.provider });
             sendMessage(lastPrompt);
         }
-    }, [lastPrompt, isLoading, sendMessage, setMessages]);
+    }, [lastPrompt, isLoading, sendMessage, setMessages, apiSettings.provider]);
 
     const clearMessages = useCallback(() => {
         setMessages([]);

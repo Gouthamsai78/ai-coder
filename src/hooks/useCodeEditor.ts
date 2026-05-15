@@ -3,6 +3,7 @@ import { useLocalStorageString } from './useLocalStorage';
 import { STORAGE_KEYS } from '../constants/storage';
 import { DEFAULT_CODE, APP_CONFIG } from '../constants/app';
 import { downloadAsHtml } from '../utils/download';
+import { analytics } from '../utils/analytics';
 import { useToast } from '../components/Toast';
 import type { EditorState, EditorActions } from '../types';
 
@@ -36,6 +37,7 @@ export function useCodeEditor(): EditorState & EditorActions {
         setHistory(prev => prev.slice(0, -1));
         setCodeRaw(previousCode);
         showToast('Restored previous code', 'info');
+        analytics.track('undo');
         return true;
     }, [history, setCodeRaw, showToast]);
 
@@ -45,12 +47,14 @@ export function useCodeEditor(): EditorState & EditorActions {
             setCodeRaw(pendingCode);
             setPendingCode(null);
             showToast('Changes applied!', 'success');
+            analytics.track('diff_applied');
         }
     }, [pendingCode, pushToHistory, setCodeRaw, showToast]);
 
     const rejectPendingCode = useCallback(() => {
         setPendingCode(null);
         showToast('Changes rejected', 'info');
+        analytics.track('diff_rejected');
     }, [showToast]);
 
     const reset = useCallback(() => {
@@ -62,12 +66,14 @@ export function useCodeEditor(): EditorState & EditorActions {
     const download = useCallback(() => {
         downloadAsHtml(code);
         showToast('Code downloaded!', 'success');
+        analytics.track('code_downloaded');
     }, [code, showToast]);
 
     const copy = useCallback(async (): Promise<boolean> => {
         try {
             await navigator.clipboard.writeText(code);
             showToast('Code copied to clipboard', 'success');
+            analytics.track('code_copied');
             return true;
         } catch {
             showToast('Failed to copy code', 'error');
