@@ -1,8 +1,8 @@
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
-import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
 // Toast types
-type ToastType = 'success' | 'error' | 'info';
+type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 interface Toast {
     id: string;
@@ -33,13 +33,15 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
     const icons = {
         success: <CheckCircle className="h-4 w-4 text-emerald-400" />,
         error: <AlertCircle className="h-4 w-4 text-red-400" />,
-        info: <Info className="h-4 w-4 text-blue-400" />
+        info: <Info className="h-4 w-4 text-blue-400" />,
+        warning: <AlertTriangle className="h-4 w-4 text-amber-400" />
     };
 
     const bgColors = {
         success: 'bg-emerald-500/10 border-emerald-500/30',
         error: 'bg-red-500/10 border-red-500/30',
-        info: 'bg-blue-500/10 border-blue-500/30'
+        info: 'bg-blue-500/10 border-blue-500/30',
+        warning: 'bg-amber-500/10 border-amber-500/30'
     };
 
     return (

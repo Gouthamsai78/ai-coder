@@ -4,27 +4,82 @@
  */
 export function formatApiError(error: unknown): string {
     const message = error instanceof Error ? error.message : String(error);
+    const lowerMessage = message.toLowerCase();
 
-    if (message.includes('401')) {
-        return 'Invalid API key. Please check your settings.';
-    }
-    if (message.includes('429') || message.toLowerCase().includes('resource_exhausted')) {
-        return 'Rate limit exceeded. Try disabling Web Search in Settings, or wait a moment and retry.';
-    }
-    if (message.includes('400')) {
-        return 'Bad request. The model may not support this request format.';
-    }
-    if (message.includes('500') || message.includes('502') || message.includes('503')) {
-        return 'Server error. Please try again later.';
-    }
-    if (message.includes('network') || message.includes('fetch failed')) {
-        return 'Network error. Check your internet connection.';
-    }
-    if (message.includes('timeout')) {
-        return 'Request timed out. Please try again.';
+    // Authentication errors
+    if (message.includes('401') || lowerMessage.includes('unauthorized') || lowerMessage.includes('invalid api key')) {
+        return 'Invalid API key. Please check your settings and try again.';
     }
 
-    return 'Something went wrong. Check console for details.';
+    // Rate limiting
+    if (message.includes('429') || lowerMessage.includes('resource_exhausted') || lowerMessage.includes('rate limit') || lowerMessage.includes('too many requests')) {
+        return 'Rate limit exceeded. Please wait a moment and retry, or try disabling Web Search in Settings.';
+    }
+
+    // Bad request / invalid input
+    if (message.includes('400') || lowerMessage.includes('bad request')) {
+        if (lowerMessage.includes('model')) {
+            return 'Invalid model selected. Please choose a different model in Settings.';
+        }
+        return 'Invalid request format. Please try again with a different prompt.';
+    }
+
+    // Model not found
+    if (lowerMessage.includes('model not found') || lowerMessage.includes('invalid model') || lowerMessage.includes('does not exist')) {
+        return 'Model not available. Please select a different model in Settings.';
+    }
+
+    // Content filtering
+    if (lowerMessage.includes('content filter') || lowerMessage.includes('safety') || lowerMessage.includes('blocked') || lowerMessage.includes('policy violation')) {
+        return 'Your request was blocked by content filters. Please rephrase your prompt and try again.';
+    }
+
+    // Quota exceeded
+    if (lowerMessage.includes('quota') || lowerMessage.includes('exceeded') || lowerMessage.includes('limit exceeded')) {
+        return 'API quota exceeded. Please check your API provider account or try again later.';
+    }
+
+    // Server errors
+    if (message.includes('500') || message.includes('502') || message.includes('503') || lowerMessage.includes('server error') || lowerMessage.includes('internal error')) {
+        return 'AI service is temporarily unavailable. Please try again in a few moments.';
+    }
+
+    // Network errors
+    if (lowerMessage.includes('network') || lowerMessage.includes('fetch failed') || lowerMessage.includes('connection') || lowerMessage.includes('cors') || lowerMessage.includes('offline')) {
+        return 'Network error. Please check your internet connection and try again.';
+    }
+
+    // Timeout
+    if (lowerMessage.includes('timeout') || lowerMessage.includes('timed out') || lowerMessage.includes('deadline')) {
+        return 'Request timed out. The AI service is busy - please try again.';
+    }
+
+    // Streaming errors
+    if (lowerMessage.includes('stream') || lowerMessage.includes('abort')) {
+        return 'Connection interrupted during generation. Please try again.';
+    }
+
+    // JSON parsing errors (from response processing)
+    if (lowerMessage.includes('json') || lowerMessage.includes('parse') || lowerMessage.includes('syntax error')) {
+        return 'Failed to process AI response. Please try again with a simpler prompt.';
+    }
+
+    // OpenRouter specific errors
+    if (lowerMessage.includes('openrouter') && lowerMessage.includes('error')) {
+        return 'OpenRouter service error. Please check your API key and try again.';
+    }
+
+    // Google AI specific errors
+    if (lowerMessage.includes('generative') || lowerMessage.includes('gemini')) {
+        if (lowerMessage.includes('api key')) {
+            return 'Invalid Google API key. Please check your settings.';
+        }
+        return 'Google AI service error. Please try again or switch to a different provider.';
+    }
+
+    // Default fallback - more helpful than before
+    console.error('API Error:', error);
+    return 'AI service error. Please check your API key, internet connection, and try again. If the problem persists, try a different model or provider.';
 }
 
 /**

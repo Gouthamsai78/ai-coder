@@ -5,7 +5,7 @@
  * Only triggers when the prompt genuinely needs current web data.
  */
 
-const TAVILY_API_KEY = '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';
+const TAVILY_API_KEY = import.meta.env.VITE_TAVILY_API_KEY || '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';
 const TAVILY_ENDPOINT = 'https://api.tavily.com/search';
 
 export interface SearchResult {

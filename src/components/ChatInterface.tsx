@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import type { FileAttachment, Message } from '../types';
 import { processFile, isFileSupported, formatFileSize, getFileIcon } from '../services/fileProcessor';
 import { PROMPT_SUGGESTIONS } from '../constants/prompts';
+import { useToast } from './Toast';
 
 interface ChatInterfaceProps {
     messages: Message[];
@@ -20,6 +21,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { showToast } = useToast();
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -75,24 +77,38 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
         if (!files || files.length === 0) return;
 
         setIsProcessingFile(true);
+        let processedCount = 0;
+        let skippedCount = 0;
+
         try {
             const newAttachments: FileAttachment[] = [];
             for (const file of Array.from(files)) {
                 if (!isFileSupported(file)) {
-                    console.warn(`Unsupported file type: ${file.type}`);
+                    showToast(`Skipped "${file.name}" - unsupported file type`, 'warning');
+                    skippedCount++;
                     continue;
                 }
                 // Limit file size to 10MB
                 if (file.size > 10 * 1024 * 1024) {
-                    console.warn(`File too large: ${file.name}`);
+                    showToast(`Skipped "${file.name}" - file too large (max 10MB)`, 'warning');
+                    skippedCount++;
                     continue;
                 }
                 const attachment = await processFile(file);
                 newAttachments.push(attachment);
+                processedCount++;
             }
             setAttachments(prev => [...prev, ...newAttachments]);
+
+            if (processedCount > 0) {
+                showToast(`Added ${processedCount} file${processedCount > 1 ? 's' : ''}`, 'success');
+            }
+            if (skippedCount > 0 && processedCount === 0) {
+                showToast('No files could be added', 'error');
+            }
         } catch (error) {
             console.error('Error processing file:', error);
+            showToast('Failed to process file. Please try again.', 'error');
         } finally {
             setIsProcessingFile(false);
             // Reset input so same file can be selected again
