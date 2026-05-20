@@ -7,6 +7,11 @@ import type { ApiProvider, ModelOption } from '../types';
 export const AI_MODELS: Record<ApiProvider, ModelOption[]> = {
     google: [
         {
+            id: 'gemini-3.5-flash',
+            name: 'Gemini 3.5 Flash',
+            description: 'Latest ultra-fast Gemini 3.5 model',
+        },
+        {
             id: 'gemini-3-flash-preview',
             name: 'Gemini 3 Flash Preview',
             description: 'Latest Gemini 3 model (Free)',
