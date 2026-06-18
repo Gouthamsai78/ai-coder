@@ -27,6 +27,10 @@ export function useAppNavigation() {
     const completeLanding = useCallback(() => {
         storage.setString(STORAGE_KEYS.HAS_VISITED, 'true');
         setShowLanding(false);
+        const hasKey = storage.getString(STORAGE_KEYS.API_KEY);
+        if (!hasKey) {
+            setShowSettings(true);
+        }
         analytics.track('landing_completed');
     }, []);
 

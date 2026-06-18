@@ -1,14 +1,16 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { STORAGE_KEYS } from '../constants/storage';
 import { generateCodeStream } from '../services/ai';
 import { formatApiError } from '../utils/errors';
 import { analytics } from '../utils/analytics';
 import { useToast } from '../components/Toast';
+import { DEMO_HTML } from '../constants/app';
 import type { Message, FileAttachment, ChatState, ChatActions, ApiSettings } from '../types';
 
 interface UseChatOptions {
     apiSettings: ApiSettings;
+    seoSettings: import('../types').SeoSettings;
     code: string;
     isDefaultCode: boolean;
     setCode: (code: string) => void;
@@ -21,7 +23,7 @@ interface UseChatOptions {
  */
 export function useChat(options: UseChatOptions): ChatState & ChatActions {
     const { showToast } = useToast();
-    const { apiSettings, code, isDefaultCode, setCode, setPendingCode, pushToHistory } = options;
+    const { apiSettings, seoSettings, code, isDefaultCode, setCode, setPendingCode, pushToHistory } = options;
 
     const [messages, setMessages] = useLocalStorage<Message[]>(
         STORAGE_KEYS.CHAT_MESSAGES,
@@ -31,6 +33,19 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
     const [isLoading, setIsLoading] = useState(false);
     const [lastError, setLastError] = useState<string | null>(null);
     const [lastPrompt, setLastPrompt] = useState('');
+    const [lastAttachments, setLastAttachments] = useState<FileAttachment[] | undefined>();
+
+    // Refs to always hold latest values without stale closures
+    const messagesRef = useRef(messages);
+    messagesRef.current = messages;
+    const abortControllerRef = useRef<AbortController | null>(null);
+
+    // Cleanup: abort any in-progress stream on unmount
+    useEffect(() => {
+        return () => {
+            abortControllerRef.current?.abort();
+        };
+    }, []);
 
     const sendMessage = useCallback(async (
         message: string,
@@ -42,21 +57,25 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
         });
         // Check for API key
         if (!apiSettings.apiKey) {
-            const providerName = apiSettings.provider === 'google'
-                ? 'Google AI Studio'
-                : 'OpenRouter';
+            setCode(DEMO_HTML);
             setMessages(prev => [
                 ...prev,
-                { role: 'user', content: message },
-                { role: 'assistant', content: `Please set your ${providerName} API Key in settings first.` }
+                { role: 'assistant', content: "Here's a sample of what AI Coder can build. Add your free API key in Settings to generate your own apps." }
             ]);
             return;
         }
 
+        // Cancel any in-progress stream
+        abortControllerRef.current?.abort();
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         setLastPrompt(message);
+        setLastAttachments(attachments);
         setLastError(null);
 
-        const newMessages: Message[] = [...messages, { role: 'user', content: message }];
+        // Use ref to avoid stale closure
+        const newMessages: Message[] = [...messagesRef.current, { role: 'user', content: message }];
         setMessages(newMessages);
         setIsLoading(true);
 
@@ -92,7 +111,12 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
                         return updated;
                     });
                 },
-                apiSettings.webSearchEnabled
+                apiSettings.webSearchEnabled,
+                seoSettings,
+                // Reset accumulatedCode on retry so chunks don't stack
+                () => {
+                    accumulatedCode = '';
+                }
             );
 
             if (isDefaultCode) {
@@ -152,16 +176,25 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
             });
         } finally {
             setIsLoading(false);
+            abortControllerRef.current = null;
         }
-    }, [apiSettings, messages, code, isDefaultCode, setCode, setPendingCode, pushToHistory, showToast, setMessages]);
+    }, [apiSettings, seoSettings, code, isDefaultCode, setCode, setPendingCode, pushToHistory, showToast, setMessages]);
 
     const retry = useCallback(() => {
         if (lastPrompt && !isLoading) {
-            setMessages(prev => prev.slice(0, -2));
+            // Remove from the last user message onwards (handles loading + error messages)
+            setMessages(prev => {
+                for (let i = prev.length - 1; i >= 0; i--) {
+                    if (prev[i].role === 'user') {
+                        return prev.slice(0, i);
+                    }
+                }
+                return prev;
+            });
             analytics.track('retry', { provider: apiSettings.provider });
-            sendMessage(lastPrompt);
+            sendMessage(lastPrompt, lastAttachments);
         }
-    }, [lastPrompt, isLoading, sendMessage, setMessages, apiSettings.provider]);
+    }, [lastPrompt, lastAttachments, isLoading, sendMessage, setMessages, apiSettings.provider]);
 
     const clearMessages = useCallback(() => {
         setMessages([]);

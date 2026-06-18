@@ -2,12 +2,33 @@ import { useCallback } from 'react';
 import { useLocalStorageString } from './useLocalStorage';
 import { STORAGE_KEYS } from '../constants/storage';
 import { DEFAULT_PROVIDER, getDefaultModel } from '../constants/models';
-import type { ApiProvider, ApiSettings } from '../types';
+import type { ApiProvider, ApiSettings, SeoSettings } from '../types';
 
-/**
- * Manages API provider, key, model selection, and GitHub token
- * All state is persisted to localStorage automatically
- */
+const DEFAULT_SEO: SeoSettings = {
+    siteTitle: '',
+    siteDescription: '',
+    siteKeywords: '',
+    ogImage: '',
+    siteUrl: '',
+    author: '',
+};
+
+function parseSeoSettings(raw: string): SeoSettings {
+    try {
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        return {
+            siteTitle: typeof parsed.siteTitle === 'string' ? parsed.siteTitle : '',
+            siteDescription: typeof parsed.siteDescription === 'string' ? parsed.siteDescription : '',
+            siteKeywords: typeof parsed.siteKeywords === 'string' ? parsed.siteKeywords : '',
+            ogImage: typeof parsed.ogImage === 'string' ? parsed.ogImage : '',
+            siteUrl: typeof parsed.siteUrl === 'string' ? parsed.siteUrl : '',
+            author: typeof parsed.author === 'string' ? parsed.author : '',
+        };
+    } catch {
+        return DEFAULT_SEO;
+    }
+}
+
 export function useApiSettings() {
     const [provider, setProviderRaw] = useLocalStorageString(
         STORAGE_KEYS.SELECTED_PROVIDER,
@@ -34,9 +55,18 @@ export function useApiSettings() {
         'false'
     );
 
+    const [seoRaw, setSeoRaw] = useLocalStorageString(
+        STORAGE_KEYS.SEO_SETTINGS,
+        JSON.stringify(DEFAULT_SEO)
+    );
+
     const setWebSearchEnabled = useCallback((enabled: boolean) => {
         setWebSearchRaw(enabled ? 'true' : 'false');
     }, [setWebSearchRaw]);
+
+    const setSeoSettings = useCallback((seo: SeoSettings) => {
+        setSeoRaw(JSON.stringify(seo));
+    }, [setSeoRaw]);
 
     // When provider changes, reset to default model for that provider
     const setProvider = useCallback((newProvider: ApiProvider) => {
@@ -52,13 +82,17 @@ export function useApiSettings() {
         webSearchEnabled: webSearchRaw === 'true',
     };
 
+    const seoSettings: SeoSettings = parseSeoSettings(seoRaw);
+
     return {
         settings,
+        seoSettings,
         setProvider,
         setApiKey,
         setModel,
         setGithubToken,
         setWebSearchEnabled,
+        setSeoSettings,
         hasApiKey: apiKey.length > 0,
     };
 }

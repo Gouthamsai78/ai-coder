@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import { Code2, Copy, Check, MessageSquare, Play } from 'lucide-react';
+import { formatFileSize } from '../services/fileProcessor';
 
 interface CodeEditorProps {
     code: string;
@@ -23,13 +24,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, isLoading: _isL
         }
     }, [code]);
 
-    // Format file size
-    const formatSize = (bytes: number) => {
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    };
-
     return (
         <div className="h-full w-full overflow-hidden card">
             {/* Header */}
@@ -38,7 +32,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onChange, isLoading: _isL
                     <Code2 className="h-4 w-4 text-[hsl(var(--primary))]" />
                     <span className="text-sm font-medium">Editor</span>
                     <span className="text-xs text-[hsl(var(--muted-foreground))] ml-2">
-                        {formatSize(new Blob([code]).size)}
+                        {formatFileSize(new Blob([code]).size)}
                     </span>
                 </div>
                 <div className="flex items-center gap-2">

@@ -40,6 +40,15 @@ export interface ApiSettings {
     webSearchEnabled: boolean;
 }
 
+export interface SeoSettings {
+    siteTitle: string;
+    siteDescription: string;
+    siteKeywords: string;
+    ogImage: string;
+    siteUrl: string;
+    author: string;
+}
+
 export interface EditorState {
     code: string;
     history: string[];
@@ -95,13 +104,6 @@ export interface ToastType {
     id: string;
     message: string;
     type: 'success' | 'error' | 'info' | 'warning';
-}
-
-export interface DeployResult {
-    success: boolean;
-    url?: string;
-    previewUrl?: string;
-    error?: string;
 }
 
 // ============================================

@@ -1,23 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Copy, Check, Paperclip, X, ChevronDown } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Copy, Check, Paperclip, X, ChevronDown, ExternalLink } from 'lucide-react';
 import clsx from 'clsx';
-import type { FileAttachment, Message } from '../types';
+import type { FileAttachment, Message, ApiProvider } from '../types';
 import { processFile, isFileSupported, formatFileSize, getFileIcon } from '../services/fileProcessor';
 import { PROMPT_SUGGESTIONS } from '../constants/prompts';
 import { useToast } from './Toast';
+import FeedbackPrompt from './FeedbackPrompt';
 
 interface ChatInterfaceProps {
     messages: Message[];
     onSendMessage: (message: string, attachments?: FileAttachment[]) => void;
     isLoading: boolean;
+    hasApiKey: boolean;
+    provider: ApiProvider;
+    onSetProvider: (provider: ApiProvider) => void;
+    onSetApiKey: (key: string) => void;
+    showFeedback: boolean;
+    onDismissFeedback: () => void;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, isLoading }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, isLoading, hasApiKey, provider, onSetProvider, onSetApiKey, showFeedback, onDismissFeedback }) => {
     const [input, setInput] = useState('');
     const [copiedId, setCopiedId] = useState<number | null>(null);
     const [expandedSearch, setExpandedSearch] = useState<number | null>(null);
     const [attachments, setAttachments] = useState<FileAttachment[]>([]);
     const [isProcessingFile, setIsProcessingFile] = useState(false);
+    const [apiKeyInput, setApiKeyInput] = useState('');
+    const [keySaved, setKeySaved] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,6 +69,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
 
     const handlePromptClick = (prompt: string) => {
         onSendMessage(prompt);
+    };
+
+    const handleSaveApiKey = () => {
+        const trimmed = apiKeyInput.trim();
+        if (!trimmed) {
+            showToast('Please paste your API key', 'warning');
+            return;
+        }
+        onSetApiKey(trimmed);
+        setKeySaved(true);
+        showToast('API key saved!', 'success');
+        setApiKeyInput('');
     };
 
     const handleCopyMessage = async (content: string, idx: number) => {
@@ -133,14 +154,107 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
                     <span className="text-sm font-medium">AI Assistant</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <span className="text-xs text-[hsl(var(--muted-foreground))]">Online</span>
+                    {hasApiKey ? (
+                        <>
+                            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                            <span className="text-xs text-[hsl(var(--muted-foreground))]">Online</span>
+                        </>
+                    ) : (
+                        <>
+                            <div className="h-2 w-2 rounded-full bg-amber-500"></div>
+                            <span className="text-xs text-[hsl(var(--muted-foreground))]">Setup needed</span>
+                        </>
+                    )}
                 </div>
             </div>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4" role="log" aria-live="polite">
-                {messages.length === 0 && (
+                {messages.length === 0 && !hasApiKey && !keySaved && (
+                    <div className="flex flex-col h-full">
+                        <div className="flex flex-col items-center text-center pt-6 pb-4">
+                            <div className="h-12 w-12 rounded-full bg-[hsl(var(--primary)/.1)] flex items-center justify-center mb-3">
+                                <Sparkles className="h-6 w-6 text-[hsl(var(--primary))]" />
+                            </div>
+                            <h3 className="font-medium text-[hsl(var(--foreground))]">One step to start building</h3>
+                            <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+                                Get a free API key (takes 30 seconds)
+                            </p>
+                        </div>
+
+                        <div className="mx-2 p-4 rounded-xl bg-[hsl(var(--secondary))] border border-[hsl(var(--border))] space-y-4">
+                            {/* Provider Toggle */}
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => onSetProvider('google')}
+                                    className={clsx(
+                                        "flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                                        provider === 'google'
+                                            ? "bg-[hsl(var(--primary)/.1)] border border-[hsl(var(--primary)/.5)] text-[hsl(var(--primary))]"
+                                            : "bg-[hsl(var(--card))] border border-transparent text-[hsl(var(--muted-foreground))]"
+                                    )}
+                                >
+                                    Google AI
+                                </button>
+                                <button
+                                    onClick={() => onSetProvider('openrouter')}
+                                    className={clsx(
+                                        "flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                                        provider === 'openrouter'
+                                            ? "bg-[hsl(var(--primary)/.1)] border border-[hsl(var(--primary)/.5)] text-[hsl(var(--primary))]"
+                                            : "bg-[hsl(var(--card))] border border-transparent text-[hsl(var(--muted-foreground))]"
+                                    )}
+                                >
+                                    OpenRouter
+                                </button>
+                            </div>
+
+                            {/* Steps */}
+                            <div className="space-y-2 text-sm text-[hsl(var(--muted-foreground))]">
+                                <div className="flex items-start gap-2">
+                                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--primary)/.15)] text-[hsl(var(--primary))] text-[10px] font-bold">1</span>
+                                    <span>
+                                        Click{' '}
+                                        <a
+                                            href={provider === 'google' ? 'https://aistudio.google.com/app/apikey' : 'https://openrouter.ai/keys'}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-[hsl(var(--primary))] hover:underline inline-flex items-center gap-1"
+                                        >
+                                            Get Free Key <ExternalLink className="h-3 w-3" />
+                                        </a>
+                                        {' '}(free, no credit card)
+                                    </span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--primary)/.15)] text-[hsl(var(--primary))] text-[10px] font-bold">2</span>
+                                    <span>Copy your key and paste it below</span>
+                                </div>
+                            </div>
+
+                            {/* Paste Field */}
+                            <div className="flex gap-2">
+                                <input
+                                    type="password"
+                                    value={apiKeyInput}
+                                    onChange={(e) => setApiKeyInput(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') handleSaveApiKey(); }}
+                                    placeholder={provider === 'google' ? 'Paste AIza... key here' : 'Paste sk-or-... key here'}
+                                    className="input flex-1 px-3 py-2.5 text-sm"
+                                />
+                                <button
+                                    onClick={handleSaveApiKey}
+                                    disabled={!apiKeyInput.trim()}
+                                    className="px-4 py-2.5 rounded-lg bg-[hsl(var(--primary))] text-white text-sm font-medium hover:opacity-90 disabled:opacity-40 transition-all"
+                                >
+                                    Save
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {messages.length === 0 && (hasApiKey || keySaved) && (
                     <div className="flex flex-col h-full">
                         {/* Empty state header */}
                         <div className="flex flex-col items-center text-center pt-8 pb-6">
@@ -271,6 +385,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
                         </div>
                     </div>
                 )}
+
+                {showFeedback && !isLoading && <FeedbackPrompt onDismiss={onDismissFeedback} />}
+
                 <div ref={messagesEndRef} />
             </div>
 

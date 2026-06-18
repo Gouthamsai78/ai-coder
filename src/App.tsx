@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Settings, Download, Home, Plus, RefreshCw, Copy, Check, Rocket, MessageSquare, Play } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Settings, Download, Home, Plus, RefreshCw, Copy, Check, Rocket, MessageSquare, Play, Code2 } from 'lucide-react';
 import { analytics } from './utils/analytics';
 
 // Components
@@ -10,6 +10,9 @@ import ChatInterface from './components/ChatInterface';
 import LandingPage from './components/LandingPage';
 import DiffViewer from './components/DiffViewer';
 import DeployModal from './components/DeployModal';
+import SiteViewer from './components/SiteViewer';
+import PrismaLanding from './components/prisma/PrismaLanding';
+import FeedbackWidget from './components/FeedbackWidget';
 import { ToastProvider, useToast } from './components/Toast';
 
 // Custom Hooks
@@ -17,6 +20,20 @@ import { useApiSettings } from './hooks/useApiSettings';
 import { useCodeEditor } from './hooks/useCodeEditor';
 import { useChat } from './hooks/useChat';
 import { useAppNavigation } from './hooks/useAppNavigation';
+
+/**
+ * Check if the current URL path is a deployed site route.
+ * Pattern: /{slug} where slug is 8 alphanumeric characters.
+ */
+function isSiteRoute(): boolean {
+    const path = window.location.pathname;
+    const segments = path.split('/').filter(Boolean);
+    return segments.length === 1 && /^[a-z0-9]{8}$/.test(segments[0]);
+}
+
+function isPrismaRoute(): boolean {
+    return window.location.pathname === '/prisma';
+}
 
 function AppContent() {
   const { showToast } = useToast();
@@ -27,6 +44,7 @@ function AppContent() {
   const editor = useCodeEditor();
   const chat = useChat({
     apiSettings: apiSettings.settings,
+    seoSettings: apiSettings.seoSettings,
     code: editor.code,
     isDefaultCode: editor.isDefault,
     setCode: editor.setCode,
@@ -36,6 +54,7 @@ function AppContent() {
 
   // UI-only state
   const [copied, setCopied] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   // Handlers
   const handleCopy = async () => {
@@ -49,9 +68,24 @@ function AppContent() {
   const handleNewChat = () => {
     chat.clearAll();
     editor.reset();
+    setShowFeedback(false);
     showToast('Started new chat (Reset All)', 'info');
     analytics.track('new_chat');
   };
+
+  // Show feedback after successful code generation
+  const prevLoadingRef = useRef(chat.isLoading);
+  useEffect(() => {
+    if (prevLoadingRef.current && !chat.isLoading) {
+      // Loading just finished — check if last message is a successful assistant response
+      const lastMsg = chat.messages[chat.messages.length - 1];
+      const isAssistantSuccess = lastMsg?.role === 'assistant' && !lastMsg.content.startsWith('❌');
+      if (isAssistantSuccess && chat.messages.length >= 2) {
+        setShowFeedback(true);
+      }
+    }
+    prevLoadingRef.current = chat.isLoading;
+  }, [chat.isLoading, chat.messages]);
 
   // Render landing if needed
   if (navigation.showLanding) {
@@ -64,7 +98,7 @@ function AppContent() {
       <header className="glass flex h-14 shrink-0 items-center justify-between px-6 z-10">
         <div className="flex items-center gap-3">
           <div className="relative flex h-9 w-9 items-center justify-center rounded-lg overflow-hidden">
-            <img src="/logo.jpg" alt="AI Coder Logo" className="hfull w-full object-cover" />
+            <img src="/logo.jpg" alt="AI Coder Logo" className="h-full w-full object-cover" />
           </div>
           <div>
             <span className="font-semibold text-base tracking-tight hidden sm:block">
@@ -178,6 +212,8 @@ function AppContent() {
           setGithubToken={apiSettings.setGithubToken}
           webSearchEnabled={apiSettings.settings.webSearchEnabled}
           setWebSearchEnabled={apiSettings.setWebSearchEnabled}
+          seoSettings={apiSettings.seoSettings}
+          setSeoSettings={apiSettings.setSeoSettings}
           onClose={navigation.closeSettings}
         />
       )}
@@ -193,13 +229,19 @@ function AppContent() {
       )}
 
       {/* Main Content */}
-      <main className="flex flex-1 overflow-hidden p-4 gap-4 pb-20 lg:pb-4">
+      <main className="flex flex-1 overflow-hidden p-4 gap-4 pb-24 lg:pb-4">
         {/* Left Panel - Chat */}
         <div className={`w-full lg:w-[400px] shrink-0 flex flex-col gap-4 ${navigation.activeTab === 'chat' ? 'flex' : 'hidden lg:flex'}`}>
           <ChatInterface
             messages={chat.messages}
             onSendMessage={chat.sendMessage}
             isLoading={chat.isLoading}
+            hasApiKey={apiSettings.hasApiKey}
+            provider={apiSettings.settings.provider}
+            onSetProvider={apiSettings.setProvider}
+            onSetApiKey={apiSettings.setApiKey}
+            showFeedback={showFeedback}
+            onDismissFeedback={() => setShowFeedback(false)}
           />
         </div>
 
@@ -225,10 +267,10 @@ function AppContent() {
       </main>
 
       {/* Mobile Toggle Navigation */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center p-1.5 gap-1 bg-black/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl z-50 lg:hidden ring-1 ring-white/10">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center p-1.5 gap-1 bg-black/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl z-50 lg:hidden ring-1 ring-white/10" style={{ bottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))' }}>
         <button
           onClick={() => navigation.setActiveTab('chat')}
-          className={`relative px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 min-w-[100px] flex items-center justify-center gap-2 ${navigation.activeTab === 'chat'
+          className={`relative px-5 py-3 rounded-full text-sm font-bold transition-all duration-300 min-w-[80px] flex items-center justify-center gap-2 ${navigation.activeTab === 'chat'
             ? 'bg-white text-black shadow-lg shadow-white/20'
             : 'text-gray-400 hover:text-white hover:bg-white/5'
             }`}
@@ -237,8 +279,18 @@ function AppContent() {
           Chat
         </button>
         <button
+          onClick={() => navigation.setActiveTab('code')}
+          className={`relative px-5 py-3 rounded-full text-sm font-bold transition-all duration-300 min-w-[80px] flex items-center justify-center gap-2 ${navigation.activeTab === 'code'
+            ? 'bg-[#a855f7] text-white shadow-lg shadow-[#a855f7]/20'
+            : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+        >
+          <Code2 className="w-4 h-4" />
+          Code
+        </button>
+        <button
           onClick={() => navigation.setActiveTab('preview')}
-          className={`relative px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 min-w-[100px] flex items-center justify-center gap-2 ${navigation.activeTab === 'preview' || navigation.activeTab === 'code'
+          className={`relative px-5 py-3 rounded-full text-sm font-bold transition-all duration-300 min-w-[80px] flex items-center justify-center gap-2 ${navigation.activeTab === 'preview'
             ? 'bg-[#0ea5e9] text-white shadow-lg shadow-[#0ea5e9]/20'
             : 'text-gray-400 hover:text-white hover:bg-white/5'
             }`}
@@ -262,8 +314,22 @@ function AppContent() {
 }
 
 function App() {
+  if (isPrismaRoute()) {
+    return <PrismaLanding />;
+  }
+
+  if (isSiteRoute()) {
+    return (
+      <ToastProvider>
+        <FeedbackWidget />
+        <SiteViewer />
+      </ToastProvider>
+    );
+  }
+
   return (
     <ToastProvider>
+      <FeedbackWidget />
       <AppContent />
     </ToastProvider>
   );

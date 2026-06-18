@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import DiffMatchPatch from 'diff-match-patch';
 import { Check, X, ArrowRight } from 'lucide-react';
 
@@ -11,6 +11,14 @@ interface DiffViewerProps {
 
 const DiffViewer: React.FC<DiffViewerProps> = ({ oldCode, newCode, onApply, onReject }) => {
     const dmp = useMemo(() => new DiffMatchPatch(), []);
+
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onReject();
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [onReject]);
 
     const diffs = useMemo(() => {
         const d = dmp.diff_main(oldCode, newCode);
@@ -30,7 +38,7 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ oldCode, newCode, onApply, onRe
     }, [diffs]);
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" role="dialog" aria-modal="true" aria-label="Review code changes">
             <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] w-full max-w-full sm:max-w-4xl max-h-[90vh] sm:max-h-[80vh] flex flex-col shadow-2xl">
                 {/* Header - Responsive Stack */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 border-b border-[hsl(var(--border))]">

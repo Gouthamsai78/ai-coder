@@ -109,6 +109,13 @@ class WebGLRenderer {
     pointerCoords = [0, 0];
     nbrOfPointers = 0;
 
+    private uResolution: WebGLUniformLocation | null = null;
+    private uTime: WebGLUniformLocation | null = null;
+    private uMove: WebGLUniformLocation | null = null;
+    private uTouch: WebGLUniformLocation | null = null;
+    private uPointerCount: WebGLUniformLocation | null = null;
+    private uPointers: WebGLUniformLocation | null = null;
+
     vertexSrc = `#version 300 es
                   precision highp float;
                   in vec4 position;
@@ -221,12 +228,12 @@ class WebGLRenderer {
         gl.enableVertexAttribArray(position);
         gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
 
-        (program as any).resolution = gl.getUniformLocation(program, 'resolution');
-        (program as any).time = gl.getUniformLocation(program, 'time');
-        (program as any).move = gl.getUniformLocation(program, 'move');
-        (program as any).touch = gl.getUniformLocation(program, 'touch');
-        (program as any).pointerCount = gl.getUniformLocation(program, 'pointerCount');
-        (program as any).pointers = gl.getUniformLocation(program, 'pointers');
+        this.uResolution = gl.getUniformLocation(program, 'resolution');
+        this.uTime = gl.getUniformLocation(program, 'time');
+        this.uMove = gl.getUniformLocation(program, 'move');
+        this.uTouch = gl.getUniformLocation(program, 'touch');
+        this.uPointerCount = gl.getUniformLocation(program, 'pointerCount');
+        this.uPointers = gl.getUniformLocation(program, 'pointers');
     }
 
     render(now = 0) {
@@ -240,12 +247,12 @@ class WebGLRenderer {
         gl.useProgram(program);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
 
-        gl.uniform2f((program as any).resolution, this.canvas.width, this.canvas.height);
-        gl.uniform1f((program as any).time, now * 1e-3);
-        gl.uniform2f((program as any).move, ...(this.mouseMove as [number, number]));
-        gl.uniform2f((program as any).touch, ...(this.mouseCoords as [number, number]));
-        gl.uniform1i((program as any).pointerCount, this.nbrOfPointers);
-        gl.uniform2fv((program as any).pointers, this.pointerCoords);
+        gl.uniform2f(this.uResolution, this.canvas.width, this.canvas.height);
+        gl.uniform1f(this.uTime, now * 1e-3);
+        gl.uniform2f(this.uMove, ...(this.mouseMove as [number, number]));
+        gl.uniform2f(this.uTouch, ...(this.mouseCoords as [number, number]));
+        gl.uniform1i(this.uPointerCount, this.nbrOfPointers);
+        gl.uniform2fv(this.uPointers, this.pointerCoords);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
 }
@@ -426,7 +433,7 @@ const ScrambleText: React.FC<{ text: string; className?: string; delay?: number 
 
     useEffect(() => {
         let iteration = 0;
-        let interval: any = null;
+        let interval: ReturnType<typeof setInterval> | null = null;
 
         const startScramble = () => {
             interval = setInterval(() => {
@@ -469,15 +476,15 @@ const Hero: React.FC<HeroProps> = ({
     const canvasRef = useShaderBackground();
 
     return (
-        <div className={`relative w-full min-h-[85vh] lg:min-h-[95vh] lg:max-h-[850px] overflow-hidden bg-black ${className}`}>
+        <div className={`relative w-full min-h-screen bg-black ${className}`}>
 
 
             <canvas
                 ref={canvasRef}
-                className="absolute inset-0 w-full h-full object-contain touch-none opacity-80"
+                className="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-80"
             />
 
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pt-10 lg:pt-20 text-white">
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pt-6 lg:pt-12 text-white">
                 {trustBadge && (
                     <div className="mb-4 sm:mb-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                         <div className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full text-[10px] sm:text-xs font-medium hover:bg-white/10 transition-colors">
@@ -517,10 +524,10 @@ const Hero: React.FC<HeroProps> = ({
                             {buttons.primary && (
                                 <MagneticButton
                                     onClick={buttons.primary.onClick}
-                                    className="group relative inline-flex h-12 sm:h-12 w-full sm:w-auto overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
+                                    className="group relative inline-flex h-14 sm:h-14 w-full sm:w-auto overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
                                 >
                                     <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
-                                    <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-6 sm:px-8 py-1 text-sm font-medium text-white backdrop-blur-3xl transition-colors hover:bg-slate-950/80">
+                                    <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-8 sm:px-10 py-3 text-sm font-medium text-white backdrop-blur-3xl transition-colors hover:bg-slate-950/80">
                                         {buttons.primary.text}
                                     </span>
                                 </MagneticButton>
@@ -528,7 +535,7 @@ const Hero: React.FC<HeroProps> = ({
                             {buttons.secondary && (
                                 <MagneticButton
                                     onClick={buttons.secondary.onClick}
-                                    className="px-6 sm:px-8 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-full font-medium text-sm transition-all duration-300 backdrop-blur-sm w-full sm:w-auto"
+                                    className="px-8 sm:px-10 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-full font-medium text-sm transition-all duration-300 backdrop-blur-sm w-full sm:w-auto"
                                 >
                                     {buttons.secondary.text}
                                 </MagneticButton>

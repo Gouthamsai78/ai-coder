@@ -13,7 +13,7 @@
 
 import OpenAI from 'openai';
 import { GoogleGenerativeAI, type Part } from '@google/generative-ai';
-import type { ApiProvider, FileAttachment } from '../types';
+import type { ApiProvider, FileAttachment, SeoSettings } from '../types';
 import { SYSTEM_PROMPT } from './ai/system-prompt';
 import { shouldSearch, searchWeb } from './search';
 
@@ -217,11 +217,30 @@ const processResponse = (
 };
 
 // ============================================
+// SEO Context Builder
+// ============================================
+
+function buildSeoContext(seo?: SeoSettings): string {
+    if (!seo) return '';
+
+    const parts: string[] = ['\n\n## 🔍 SEO SETTINGS (generate meta tags using these):'];
+
+    if (seo.siteTitle) parts.push(`- Title: ${seo.siteTitle}`);
+    if (seo.siteDescription) parts.push(`- Description: ${seo.siteDescription}`);
+    if (seo.siteKeywords) parts.push(`- Keywords: ${seo.siteKeywords}`);
+    if (seo.author) parts.push(`- Author: ${seo.author}`);
+    if (seo.siteUrl) parts.push(`- Canonical URL: ${seo.siteUrl}`);
+    if (seo.ogImage) parts.push(`- OG Image: ${seo.ogImage}`);
+
+    parts.push('\nGenerate ALL required SEO meta tags in the <head> section. Include sitemap.xml and robots.txt references.');
+
+    return parts.join('\n');
+}
+
+// ============================================
 // Public API
 // ============================================
 
-/**
- * Main code generation function
 /**
  * Main code generation function
  * Routes to the appropriate AI provider and handles streaming.
@@ -245,7 +264,9 @@ export const generateCodeStream = async (
     provider: ApiProvider = 'openrouter',
     attachments?: FileAttachment[],
     onStatus?: (status: string) => void,
-    webSearchEnabled?: boolean
+    webSearchEnabled?: boolean,
+    seoSettings?: SeoSettings,
+    onRetry?: () => void
 ): Promise<{ code: string; summary: string; searchData?: { query: string; results: { title: string; url: string; snippet: string }[] } }> => {
     // Extract the latest user message for search context detection
     const latestUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || '';
@@ -268,6 +289,10 @@ export const generateCodeStream = async (
         onStatus?.('⚡ Generating code...');
     }
 
+    // Build full context string (search + SEO)
+    const seoContextStr = buildSeoContext(seoSettings);
+    const fullContext = [searchContextStr, seoContextStr].filter(Boolean).join('\n');
+
     const MAX_RETRIES = 3;
     let lastError: unknown;
 
@@ -282,7 +307,7 @@ export const generateCodeStream = async (
                     currentCode,
                     onChunk,
                     attachments,
-                    searchContextStr
+                    fullContext || undefined
                 );
             } else {
                 result = await generateWithOpenRouter(
@@ -292,7 +317,7 @@ export const generateCodeStream = async (
                     currentCode,
                     onChunk,
                     attachments,
-                    searchContextStr
+                    fullContext || undefined
                 );
             }
             return { ...result, searchData };
@@ -305,6 +330,7 @@ export const generateCodeStream = async (
                 const delay = Math.pow(2, attempt + 1) * 1000;
                 onStatus?.(`⏳ Rate limited. Retrying in ${delay / 1000}s...`);
                 console.warn(`Rate limited (attempt ${attempt + 1}/${MAX_RETRIES}). Retrying in ${delay / 1000}s...`);
+                onRetry?.();
                 await new Promise(resolve => setTimeout(resolve, delay));
                 continue;
             }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback, useRef } from 'react';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
 // Toast types
@@ -45,12 +45,17 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
     };
 
     return (
-        <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${bgColors[toast.type]} backdrop-blur-sm slide-in-from-bottom`}>
+        <div
+            role={toast.type === 'error' ? 'alert' : 'status'}
+            aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${bgColors[toast.type]} backdrop-blur-sm slide-in-from-bottom`}
+        >
             {icons[toast.type]}
             <span className="text-sm text-[hsl(var(--foreground))]">{toast.message}</span>
             <button
                 onClick={() => onRemove(toast.id)}
                 className="ml-auto p-1 hover:bg-white/10 rounded transition-colors"
+                aria-label="Dismiss notification"
             >
                 <X className="h-3 w-3 text-[hsl(var(--muted-foreground))]" />
             </button>
@@ -60,9 +65,10 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
+    const counterRef = useRef(0);
 
     const showToast = useCallback((message: string, type: ToastType = 'info') => {
-        const id = Math.random().toString(36).substring(7);
+        const id = `toast-${++counterRef.current}-${Date.now()}`;
         setToasts(prev => [...prev, { id, message, type }]);
     }, []);
 

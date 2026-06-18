@@ -5,7 +5,7 @@
  * Only triggers when the prompt genuinely needs current web data.
  */
 
-const TAVILY_API_KEY = import.meta.env.VITE_TAVILY_API_KEY || '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';
+const TAVILY_API_KEY = import.meta.env.VITE_TAVILY_API_KEY || '';
 const TAVILY_ENDPOINT = 'https://api.tavily.com/search';
 
 export interface SearchResult {
@@ -51,6 +51,11 @@ export interface SearchWebResult {
  * Run a Tavily web search. Returns structured results + context, or null on failure.
  */
 export async function searchWeb(query: string): Promise<SearchWebResult | null> {
+    if (!TAVILY_API_KEY) {
+        console.warn('[WebSearch] No Tavily API key configured. Set VITE_TAVILY_API_KEY in your .env file.');
+        return null;
+    }
+
     try {
         const response = await fetch(TAVILY_ENDPOINT, {
             method: 'POST',

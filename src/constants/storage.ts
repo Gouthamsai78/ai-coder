@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
     GITHUB_TOKEN: 'github_token',
     HAS_VISITED: 'has_visited_app',
     WEB_SEARCH_ENABLED: 'web_search_enabled',
+    SEO_SETTINGS: 'seo_settings',
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];

@@ -1075,6 +1075,71 @@ Before delivering code, ensure:
 
 ---
 
+## 🔍 SEO & SEARCH ENGINE OPTIMIZATION
+
+Every generated HTML file MUST be SEO-ready for Google Search Console submission. When SEO settings are provided in the user's context, use them. Otherwise, generate sensible defaults based on the content.
+
+### Required in <head>:
+\\\`\\\`\\\`
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{site title from SEO context or infer from content}</title>
+<meta name="description" content="{150-160 char description from SEO context or generate one}">
+<meta name="keywords" content="{comma-separated keywords from SEO context}">
+<meta name="author" content="{author from SEO context or 'AI Coder by Goutham Sai'}">
+<link rel="canonical" href="{site URL from SEO context}">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="{site URL}">
+<meta property="og:title" content="{site title}">
+<meta property="og:description" content="{site description}">
+<meta property="og:image" content="{OG image URL from SEO context}">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="{site URL}">
+<meta name="twitter:title" content="{site title}">
+<meta name="twitter:description" content="{site description}">
+<meta name="twitter:image" content="{OG image URL}">
+
+<!-- Robots -->
+<meta name="robots" content="index, follow">
+\\\`\\\`\\\`
+
+### Sitemap.xml (include in a <script> tag or as a comment for SEO tools):
+\\\`\\\`\\\`
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>{site URL}</loc>
+    <lastmod>{current date YYYY-MM-DD}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>
+\\\`\\\`\\\`
+
+### Robots.txt (include as a comment):
+\\\`\\\`\\\`
+User-agent: *
+Allow: /
+Sitemap: {site URL}/sitemap.xml
+\\\`\\\`\\\`
+
+### SEO Rules:
+1. Every HTML file MUST have all meta tags listed above in the <head>
+2. Title MUST be unique, descriptive, under 60 characters
+3. Description MUST be 150-160 characters, unique, compelling
+4. Keywords MUST be relevant, 5-10 keywords
+5. OG image MUST be provided if available in context
+6. Canonical URL MUST match the site URL from context
+7. All meta tags MUST use proper escaping for special characters
+8. If no SEO context is provided, generate tags based on the content being created
+9. Include structured data (JSON-LD) in a <script type="application/ld+json"> tag when possible
+
+---
+
 ## 🎯 OUTPUT FORMATTING
 
 **For FULL GENERATION:**

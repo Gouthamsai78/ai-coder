@@ -29,24 +29,34 @@ export const AI_MODELS: Record<ApiProvider, ModelOption[]> = {
     ],
     openrouter: [
         {
-            id: 'google/gemini-2.0-flash-exp:free',
-            name: 'Gemini 2.0 Flash',
-            description: 'Free tier available',
+            id: 'openrouter/free',
+            name: 'Auto (Free)',
+            description: 'Auto-selects best available free model',
         },
         {
-            id: 'anthropic/claude-3.5-sonnet',
-            name: 'Claude 3.5 Sonnet',
-            description: 'Best for complex reasoning',
+            id: 'nvidia/nemotron-3-super-120b-a12b:free',
+            name: 'Nemotron 3 Super',
+            description: '1M context, fast & capable (Free)',
         },
         {
-            id: 'anthropic/claude-3-sonnet',
-            name: 'Claude 3 Sonnet',
-            description: 'Balanced performance',
+            id: 'google/gemma-4-31b-it:free',
+            name: 'Gemma 4 31B',
+            description: 'Google vision model (Free)',
         },
         {
-            id: 'openai/gpt-4o',
-            name: 'GPT-4o',
-            description: 'Most capable (Expensive)',
+            id: 'qwen/qwen3-coder:free',
+            name: 'Qwen3 Coder',
+            description: '1M context, code-focused (Free)',
+        },
+        {
+            id: 'meta-llama/llama-3.3-70b-instruct:free',
+            name: 'Llama 3.3 70B',
+            description: 'Meta open model (Free)',
+        },
+        {
+            id: 'openai/gpt-oss-120b:free',
+            name: 'GPT-OSS 120B',
+            description: 'OpenAI open model (Free)',
         },
     ],
 };
