@@ -11,7 +11,6 @@ import LandingPage from './components/LandingPage';
 import DiffViewer from './components/DiffViewer';
 import DeployModal from './components/DeployModal';
 import SiteViewer from './components/SiteViewer';
-import PrismaLanding from './components/prisma/PrismaLanding';
 import FeedbackWidget from './components/FeedbackWidget';
 import { ToastProvider, useToast } from './components/Toast';
 
@@ -31,9 +30,6 @@ function isSiteRoute(): boolean {
     return segments.length === 1 && /^[A-Za-z0-9_-]{6,}$/.test(segments[0]);
 }
 
-function isPrismaRoute(): boolean {
-    return window.location.pathname === '/prisma';
-}
 
 function AppContent() {
   const { showToast } = useToast();
@@ -300,10 +296,6 @@ function AppContent() {
 }
 
 function App() {
-  if (isPrismaRoute()) {
-    return <PrismaLanding />;
-  }
-
   if (isSiteRoute()) {
     return (
       <ToastProvider>
