@@ -3,10 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 import { randomBytes } from 'crypto';
 
 // ─── Supabase Client ────────────────────────────────────────────
-const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!
-);
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error('Missing SUPABASE_URL or SUPABASE_ANON_KEY env vars');
+}
+
+const supabase = supabaseUrl && supabaseKey
+    ? createClient(supabaseUrl, supabaseKey)
+    : null;
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -52,6 +58,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (!id || typeof id !== 'string') {
             return res.status(400).json({ error: 'Site ID required' });
+        }
+
+        if (!supabase) {
+            return res.status(500).json({ error: 'Storage not configured' });
         }
 
         const { data: site } = await supabase
@@ -100,6 +110,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // POST /api/site → deploy HTML
     if (req.method === 'POST') {
+        if (!supabase) {
+            return res.status(500).json({ error: 'Storage not configured' });
+        }
+
         try {
             const { html, title, customSlug } = req.body;
 
