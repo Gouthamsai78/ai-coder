@@ -115,6 +115,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
 
             let slug: string;
+            let isUpdate = false;
 
             if (customSlug && typeof customSlug === 'string') {
                 const normalized = customSlug.toLowerCase().trim();
@@ -129,9 +130,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     .eq('slug', normalized)
                     .limit(1);
                 if (existing && existing.length > 0) {
-                    return res.status(409).json({
-                        error: 'This URL is already taken. Try another one.',
-                    });
+                    isUpdate = true;
                 }
                 slug = normalized;
             } else {
@@ -152,16 +151,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }
             }
 
-            const { error } = await supabase
-                .from('deployed_sites')
-                .insert({
-                    slug,
-                    html,
-                    title: typeof title === 'string' ? title.slice(0, 200) : null,
-                });
+            const siteData = {
+                slug,
+                html,
+                title: typeof title === 'string' ? title.slice(0, 200) : null,
+            };
 
-            if (error) {
-                throw error;
+            if (isUpdate) {
+                const { error } = await supabase
+                    .from('deployed_sites')
+                    .update({ html: siteData.html, title: siteData.title, updated_at: new Date().toISOString() })
+                    .eq('slug', slug);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase
+                    .from('deployed_sites')
+                    .insert(siteData);
+                if (error) throw error;
             }
 
             const url = `https://aicoderbygoutham.vercel.app/${slug}`;
