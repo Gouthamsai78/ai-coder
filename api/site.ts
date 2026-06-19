@@ -1,13 +1,70 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { randomBytes } from 'crypto';
 
-// Single shared in-memory store (same process for both deploy + view)
-// Cold start = data lost. For production: swap for Redis/Vercel KV.
-const sitesStore = new Map<string, {
+// ─── Storage Layer ───────────────────────────────────────────────
+// Uses Vercel KV (Upstash Redis) when env vars are set, otherwise
+// falls back to in-memory Map (data lost on cold start).
+
+interface SiteData {
     html: string;
     title?: string;
     created_at: string;
-}>();
+}
+
+const KV_PREFIX = 'site:';
+const SITES_INDEX_KEY = 'sites:index';
+
+function isKvConfigured(): boolean {
+    return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+}
+
+async function kvGet(slug: string): Promise<SiteData | null> {
+    const { kv } = await import('@vercel/kv');
+    const raw = await kv.get<string>(`${KV_PREFIX}${slug}`);
+    return raw ? (JSON.parse(raw) as SiteData) : null;
+}
+
+async function kvSet(slug: string, data: SiteData): Promise<void> {
+    const { kv } = await import('@vercel/kv');
+    await kv.set(`${KV_PREFIX}${slug}`, JSON.stringify(data));
+    // Add to index for collision checks
+    const index = (await kv.get<string[]>(SITES_INDEX_KEY)) || [];
+    if (!index.includes(slug)) {
+        index.push(slug);
+        await kv.set(SITES_INDEX_KEY, index);
+    }
+}
+
+async function kvHas(slug: string): Promise<boolean> {
+    const { kv } = await import('@vercel/kv');
+    const index = (await kv.get<string[]>(SITES_INDEX_KEY)) || [];
+    return index.includes(slug);
+}
+
+// In-memory fallback
+const memStore = new Map<string, SiteData>();
+const memIndex = new Set<string>();
+
+async function storeGet(slug: string): Promise<SiteData | null> {
+    if (isKvConfigured()) return kvGet(slug);
+    return memStore.get(slug) || null;
+}
+
+async function storeHas(slug: string): Promise<boolean> {
+    if (isKvConfigured()) return kvHas(slug);
+    return memIndex.has(slug);
+}
+
+async function storeSet(slug: string, data: SiteData): Promise<void> {
+    if (isKvConfigured()) {
+        await kvSet(slug, data);
+    } else {
+        memStore.set(slug, data);
+        memIndex.add(slug);
+    }
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────
 
 function generateSlug(): string {
     return randomBytes(4).toString('base64url');
@@ -33,6 +90,8 @@ function setSecurityHeaders(res: VercelResponse) {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 }
 
+// ─── Handler ─────────────────────────────────────────────────────
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     setSecurityHeaders(res);
 
@@ -51,7 +110,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: 'Site ID required' });
         }
 
-        const site = sitesStore.get(id);
+        const site = await storeGet(id);
 
         if (!site) {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -113,7 +172,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         error: 'Invalid slug. Use 3-30 lowercase letters, numbers, or hyphens.',
                     });
                 }
-                if (sitesStore.has(normalized)) {
+                if (await storeHas(normalized)) {
                     return res.status(409).json({
                         error: 'This URL is already taken. Try another one.',
                     });
@@ -121,16 +180,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 slug = normalized;
             } else {
                 slug = generateSlug();
-                while (sitesStore.has(slug)) {
+                while (await storeHas(slug)) {
                     slug = generateSlug();
                 }
             }
 
-            sitesStore.set(slug, {
+            const siteData: SiteData = {
                 html,
                 title: typeof title === 'string' ? title.slice(0, 200) : undefined,
                 created_at: new Date().toISOString(),
-            });
+            };
+            await storeSet(slug, siteData);
 
             const url = `https://aicoderbygoutham.vercel.app/${slug}`;
 
