@@ -299,7 +299,6 @@ function App() {
   if (isSiteRoute()) {
     return (
       <ToastProvider>
-        <FeedbackWidget />
         <SiteViewer />
       </ToastProvider>
     );

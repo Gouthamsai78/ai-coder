@@ -104,7 +104,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         try {
-            const { html, title, customSlug } = req.body;
+            const { html, title, customSlug, oldSlug } = req.body;
 
             if (!html || typeof html !== 'string') {
                 return res.status(400).json({ error: 'HTML content is required' });
@@ -149,6 +149,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         .limit(1);
                     existing = check.data;
                 }
+            }
+
+            // Handle rename: delete old slug entry if slug changed
+            if (oldSlug && typeof oldSlug === 'string' && oldSlug !== slug) {
+                await supabase
+                    .from('deployed_sites')
+                    .delete()
+                    .eq('slug', oldSlug);
             }
 
             const siteData = {
