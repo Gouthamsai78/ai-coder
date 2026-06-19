@@ -92,6 +92,7 @@ export interface EditorActions {
 export interface ChatActions {
     sendMessage: (message: string, attachments?: FileAttachment[]) => Promise<void>;
     retry: () => void;
+    stopGeneration: () => void;
     clearMessages: () => void;
     clearAll: () => void;
 }

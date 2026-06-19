@@ -40,6 +40,7 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
     const messagesRef = useRef(messages);
     messagesRef.current = messages;
     const abortControllerRef = useRef<AbortController | null>(null);
+    const userStoppedRef = useRef(false);
 
     // Cleanup: abort any in-progress stream on unmount
     useEffect(() => {
@@ -165,21 +166,33 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
             }
             succeeded = true;
         } catch (error) {
-            const friendlyError = formatApiError(error);
-            setLastError(friendlyError);
+            const isUserAbort = userStoppedRef.current || (error instanceof DOMException && error.name === 'AbortError');
+            userStoppedRef.current = false;
 
-            // Remove loading message
-            setMessages(prev => prev.slice(0, -1));
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: `❌ Error: ${friendlyError}\n\nClick "Retry" to try again.`
-            }]);
+            if (isUserAbort) {
+                // User clicked stop — remove loading message, no error
+                setMessages(prev => prev.slice(0, -1));
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: '⏹️ Generation stopped.'
+                }]);
+            } else {
+                const friendlyError = formatApiError(error);
+                setLastError(friendlyError);
 
-            showToast(friendlyError, 'error');
-            analytics.track('generation_error', {
-                error_type: friendlyError,
-                provider: apiSettings.provider,
-            });
+                // Remove loading message
+                setMessages(prev => prev.slice(0, -1));
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: `❌ Error: ${friendlyError}\n\nClick "Retry" to try again.`
+                }]);
+
+                showToast(friendlyError, 'error');
+                analytics.track('generation_error', {
+                    error_type: friendlyError,
+                    provider: apiSettings.provider,
+                });
+            }
         } finally {
             setIsLoading(false);
             abortControllerRef.current = null;
@@ -217,6 +230,13 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
         setLastPrompt('');
     }, [setMessages]);
 
+    const stopGeneration = useCallback(() => {
+        if (abortControllerRef.current) {
+            userStoppedRef.current = true;
+            abortControllerRef.current.abort();
+        }
+    }, []);
+
     return {
         // State
         messages,
@@ -226,6 +246,7 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
         // Actions
         sendMessage,
         retry,
+        stopGeneration,
         clearMessages,
         clearAll,
     };

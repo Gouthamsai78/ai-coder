@@ -218,6 +218,7 @@ function AppContent() {
           <ChatInterface
             messages={chat.messages}
             onSendMessage={chat.sendMessage}
+            onStopGeneration={chat.stopGeneration}
             isLoading={chat.isLoading}
             hasApiKey={apiSettings.hasApiKey}
             provider={apiSettings.settings.provider}

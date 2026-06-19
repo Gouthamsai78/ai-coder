@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Copy, Check, Paperclip, X, ChevronDown, ExternalLink } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Copy, Check, Paperclip, X, ChevronDown, ExternalLink, Square } from 'lucide-react';
 import clsx from 'clsx';
 import type { FileAttachment, Message, ApiProvider } from '../types';
 import { processFile, isFileSupported, formatFileSize, getFileIcon } from '../services/fileProcessor';
@@ -10,6 +10,7 @@ import FeedbackPrompt from './FeedbackPrompt';
 interface ChatInterfaceProps {
     messages: Message[];
     onSendMessage: (message: string, attachments?: FileAttachment[]) => void;
+    onStopGeneration?: () => void;
     isLoading: boolean;
     hasApiKey: boolean;
     provider: ApiProvider;
@@ -19,7 +20,7 @@ interface ChatInterfaceProps {
     onDismissFeedback: () => void;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, isLoading, hasApiKey, provider, onSetProvider, onSetApiKey, showFeedback, onDismissFeedback }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, onStopGeneration, isLoading, hasApiKey, provider, onSetProvider, onSetApiKey, showFeedback, onDismissFeedback }) => {
     const [input, setInput] = useState('');
     const [copiedId, setCopiedId] = useState<number | null>(null);
     const [expandedSearch, setExpandedSearch] = useState<number | null>(null);
@@ -450,14 +451,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
                         >
                             <Paperclip className={clsx("h-4 w-4", isProcessingFile && "animate-pulse")} />
                         </button>
-                        {/* Send Button */}
-                        <button
-                            type="submit"
-                            disabled={isLoading || (!input.trim() && attachments.length === 0)}
-                            className="p-2 rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/.1)] disabled:opacity-50 disabled:hover:bg-transparent transition-all"
-                        >
-                            <Send className="h-4 w-4" />
-                        </button>
+                        {/* Send / Stop Button */}
+                        {isLoading ? (
+                            <button
+                                type="button"
+                                onClick={onStopGeneration}
+                                className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 transition-all"
+                                title="Stop generating"
+                            >
+                                <Square className="h-4 w-4 fill-current" />
+                            </button>
+                        ) : (
+                            <button
+                                type="submit"
+                                disabled={!input.trim() && attachments.length === 0}
+                                className="p-2 rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/.1)] disabled:opacity-50 disabled:hover:bg-transparent transition-all"
+                            >
+                                <Send className="h-4 w-4" />
+                            </button>
+                        )}
                     </div>
                 </div>
                 <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1.5 text-center">
