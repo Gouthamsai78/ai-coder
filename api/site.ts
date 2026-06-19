@@ -1,68 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
 import { randomBytes } from 'crypto';
 
-// ─── Storage Layer ───────────────────────────────────────────────
-// Uses Vercel KV (Upstash Redis) when env vars are set, otherwise
-// falls back to in-memory Map (data lost on cold start).
-
-interface SiteData {
-    html: string;
-    title?: string;
-    created_at: string;
-}
-
-const KV_PREFIX = 'site:';
-const SITES_INDEX_KEY = 'sites:index';
-
-function isKvConfigured(): boolean {
-    return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
-}
-
-async function kvGet(slug: string): Promise<SiteData | null> {
-    const { kv } = await import('@vercel/kv');
-    const raw = await kv.get<string>(`${KV_PREFIX}${slug}`);
-    return raw ? (JSON.parse(raw) as SiteData) : null;
-}
-
-async function kvSet(slug: string, data: SiteData): Promise<void> {
-    const { kv } = await import('@vercel/kv');
-    await kv.set(`${KV_PREFIX}${slug}`, JSON.stringify(data));
-    // Add to index for collision checks
-    const index = (await kv.get<string[]>(SITES_INDEX_KEY)) || [];
-    if (!index.includes(slug)) {
-        index.push(slug);
-        await kv.set(SITES_INDEX_KEY, index);
-    }
-}
-
-async function kvHas(slug: string): Promise<boolean> {
-    const { kv } = await import('@vercel/kv');
-    const index = (await kv.get<string[]>(SITES_INDEX_KEY)) || [];
-    return index.includes(slug);
-}
-
-// In-memory fallback
-const memStore = new Map<string, SiteData>();
-const memIndex = new Set<string>();
-
-async function storeGet(slug: string): Promise<SiteData | null> {
-    if (isKvConfigured()) return kvGet(slug);
-    return memStore.get(slug) || null;
-}
-
-async function storeHas(slug: string): Promise<boolean> {
-    if (isKvConfigured()) return kvHas(slug);
-    return memIndex.has(slug);
-}
-
-async function storeSet(slug: string, data: SiteData): Promise<void> {
-    if (isKvConfigured()) {
-        await kvSet(slug, data);
-    } else {
-        memStore.set(slug, data);
-        memIndex.add(slug);
-    }
-}
+// ─── Supabase Client ────────────────────────────────────────────
+const supabase = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!
+);
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -110,7 +54,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: 'Site ID required' });
         }
 
-        const site = await storeGet(id);
+        const { data: site } = await supabase
+            .from('deployed_sites')
+            .select('html, title')
+            .eq('slug', id)
+            .single();
 
         if (!site) {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -172,7 +120,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         error: 'Invalid slug. Use 3-30 lowercase letters, numbers, or hyphens.',
                     });
                 }
-                if (await storeHas(normalized)) {
+                const { data: existing } = await supabase
+                    .from('deployed_sites')
+                    .select('slug')
+                    .eq('slug', normalized)
+                    .single();
+                if (existing) {
                     return res.status(409).json({
                         error: 'This URL is already taken. Try another one.',
                     });
@@ -180,17 +133,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 slug = normalized;
             } else {
                 slug = generateSlug();
-                while (await storeHas(slug)) {
+                let { data: existing } = await supabase
+                    .from('deployed_sites')
+                    .select('slug')
+                    .eq('slug', slug)
+                    .single();
+                while (existing) {
                     slug = generateSlug();
+                    const check = await supabase
+                        .from('deployed_sites')
+                        .select('slug')
+                        .eq('slug', slug)
+                        .single();
+                    existing = check.data;
                 }
             }
 
-            const siteData: SiteData = {
-                html,
-                title: typeof title === 'string' ? title.slice(0, 200) : undefined,
-                created_at: new Date().toISOString(),
-            };
-            await storeSet(slug, siteData);
+            const { error } = await supabase
+                .from('deployed_sites')
+                .insert({
+                    slug,
+                    html,
+                    title: typeof title === 'string' ? title.slice(0, 200) : null,
+                });
+
+            if (error) {
+                throw error;
+            }
 
             const url = `https://aicoderbygoutham.vercel.app/${slug}`;
 
