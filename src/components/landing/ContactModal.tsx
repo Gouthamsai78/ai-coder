@@ -64,20 +64,15 @@ interface ContactModalProps {
 }
 
 const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
     const [status, setStatus] = useState<SubmitStatus>('idle');
     const [errorMsg, setErrorMsg] = useState('');
-    const [rateLimit, setRateLimit] = useState<RateLimitState | null>(null);
+    const [rateLimit, setRateLimit] = useState<RateLimitState | null>(() => getRateLimit());
 
-    useEffect(() => {
-        if (isOpen) {
-            setRateLimit(getRateLimit());
-            if (getRateLimit() && getRateLimit()!.count >= RATE_LIMIT_MAX) {
-                setStatus('rate_limited');
-            }
-        }
-    }, [isOpen]);
+    // Derive rate-limited status from current state
+    const isAlreadyRateLimited = rateLimit !== null && rateLimit.count >= RATE_LIMIT_MAX;
 
     // Close on Escape
     useEffect(() => {
@@ -92,7 +87,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
 
     const handleSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!email.trim() || !message.trim() || !isValidEmail(email)) return;
+        if (!name.trim() || !email.trim() || !message.trim() || !isValidEmail(email)) return;
 
         const current = getRateLimit();
         if (current && current.count >= RATE_LIMIT_MAX) {
@@ -111,6 +106,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
                     EMAILJS_CONFIG.serviceId,
                     EMAILJS_CONFIG.templateId,
                     {
+                        from_name: name.trim(),
                         from_email: email.trim(),
                         message: message.trim(),
                         page_url: window.location.href,
@@ -130,9 +126,10 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
             setErrorMsg(err instanceof Error ? err.message : 'Failed to send message');
             analytics.track('contact_error', { error: String(err) });
         }
-    }, [email, message]);
+    }, [name, email, message]);
 
     const handleClose = useCallback(() => {
+        setName('');
         setEmail('');
         setMessage('');
         setStatus('idle');
@@ -140,7 +137,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
         onClose();
     }, [onClose]);
 
-    const canSubmit = email.trim() && message.trim() && isValidEmail(email) && status !== 'loading' && status !== 'rate_limited';
+    const canSubmit = name.trim() && email.trim() && message.trim() && isValidEmail(email) && status !== 'loading' && status !== 'rate_limited' && !isAlreadyRateLimited;
     const remaining = getRemainingTime();
 
     if (!isOpen) return null;
@@ -203,7 +200,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
                                 Close
                             </button>
                         </div>
-                    ) : status === 'rate_limited' ? (
+                    ) : status === 'rate_limited' || isAlreadyRateLimited ? (
                         <div className="flex flex-col items-center py-6 text-center">
                             <div className="h-12 w-12 rounded-full bg-amber-500/20 flex items-center justify-center mb-3">
                                 <AlertTriangle className="h-6 w-6 text-amber-500" />
@@ -233,6 +230,20 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+                                    Name <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="Your name"
+                                    className="w-full px-3 py-2.5 rounded-lg bg-[hsl(var(--card))] border border-[hsl(var(--border))] text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground)/.5)] focus:outline-none focus:ring-1 focus:ring-orange-500/50"
+                                    required
+                                />
+                            </div>
+
                             <div>
                                 <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
                                     Email <span className="text-red-400">*</span>

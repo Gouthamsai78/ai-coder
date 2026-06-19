@@ -5,15 +5,16 @@ interface WordsPullUpProps {
     text: string;
     className?: string;
     showAsterisk?: boolean;
+    style?: React.CSSProperties;
 }
 
-const WordsPullUp: React.FC<WordsPullUpProps> = ({ text, className = '', showAsterisk = false }) => {
+const WordsPullUp: React.FC<WordsPullUpProps> = ({ text, className = '', showAsterisk = false, style }) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true });
     const words = text.split(' ');
 
     return (
-        <div ref={ref} className={`flex flex-wrap ${className}`}>
+        <div ref={ref} className={`flex flex-wrap ${className}`} style={style}>
             {words.map((word, i) => (
                 <span key={i} className="inline-flex overflow-hidden">
                     <motion.span

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo } from 'react';
 import { ExternalLink, Monitor, MessageSquare, Code2, Play } from 'lucide-react';
 
 interface PreviewProps {
@@ -8,9 +8,6 @@ interface PreviewProps {
 }
 
 const Preview: React.FC<PreviewProps> = ({ code, activeTab, onTabChange }) => {
-    const iframeKeyRef = useRef(0);
-    const lastCodeLenRef = useRef(0);
-
     const handleOpenInNewTab = () => {
         const blob = new Blob([code], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
@@ -34,13 +31,6 @@ const Preview: React.FC<PreviewProps> = ({ code, activeTab, onTabChange }) => {
         // Return the code as-is (should be valid HTML)
         return code;
     }, [code]);
-
-    // Only re-key iframe when code changes significantly (>500 chars diff)
-    const codeLenDiff = Math.abs(safeSrcDoc.length - lastCodeLenRef.current);
-    if (codeLenDiff > 500 || lastCodeLenRef.current === 0) {
-        iframeKeyRef.current += 1;
-        lastCodeLenRef.current = safeSrcDoc.length;
-    }
 
     return (
         <div className="h-full w-full overflow-hidden rounded-[var(--radius)] border border-[hsl(var(--border))] bg-white">
@@ -90,7 +80,6 @@ const Preview: React.FC<PreviewProps> = ({ code, activeTab, onTabChange }) => {
 
             {/* Iframe - sandbox without allow-same-origin to prevent navigation */}
             <iframe
-                key={iframeKeyRef.current}
                 srcDoc={safeSrcDoc}
                 title="Preview"
                 className="h-[calc(100%-41px)] w-full border-none bg-white"

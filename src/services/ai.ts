@@ -32,7 +32,8 @@ const generateWithGoogleAI = async (
     currentCode: string,
     onChunk: (chunk: string) => void,
     attachments?: FileAttachment[],
-    searchContext?: string
+    searchContext?: string,
+    signal?: AbortSignal
 ): Promise<{ code: string; summary: string }> => {
     // Initialize the Google Generative AI client
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -109,7 +110,7 @@ Based on the conversation above, generate the COMPLETE updated HTML file. Always
     }
 
     // Stream the response
-    const result = await chat.sendMessageStream(promptParts);
+    const result = await chat.sendMessageStream(promptParts, { signal });
     let fullContent = '';
 
     for await (const chunk of result.stream) {
@@ -134,7 +135,8 @@ const generateWithOpenRouter = async (
     currentCode: string,
     onChunk: (chunk: string) => void,
     attachments?: FileAttachment[],
-    searchContext?: string
+    searchContext?: string,
+    signal?: AbortSignal
 ): Promise<{ code: string; summary: string }> => {
     const openai = new OpenAI({
         apiKey: apiKey,
@@ -172,7 +174,7 @@ Based on the conversation above, generate the COMPLETE updated HTML file. Always
             },
         ],
         stream: true,
-    });
+    }, { signal });
 
     let fullContent = '';
 
@@ -266,7 +268,8 @@ export const generateCodeStream = async (
     onStatus?: (status: string) => void,
     webSearchEnabled?: boolean,
     seoSettings?: SeoSettings,
-    onRetry?: () => void
+    onRetry?: () => void,
+    signal?: AbortSignal
 ): Promise<{ code: string; summary: string; searchData?: { query: string; results: { title: string; url: string; snippet: string }[] } }> => {
     // Extract the latest user message for search context detection
     const latestUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || '';
@@ -307,7 +310,8 @@ export const generateCodeStream = async (
                     currentCode,
                     onChunk,
                     attachments,
-                    fullContext || undefined
+                    fullContext || undefined,
+                    signal
                 );
             } else {
                 result = await generateWithOpenRouter(
@@ -317,7 +321,8 @@ export const generateCodeStream = async (
                     currentCode,
                     onChunk,
                     attachments,
-                    fullContext || undefined
+                    fullContext || undefined,
+                    signal
                 );
             }
             return { ...result, searchData };

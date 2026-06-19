@@ -103,7 +103,7 @@ function SiteViewer(): React.ReactNode {
                 srcDoc={html}
                 title="Deployed Site"
                 className="w-full h-screen border-0"
-                sandbox="allow-scripts allow-same-origin"
+                sandbox="allow-scripts"
             />
         </div>
     );

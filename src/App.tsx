@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Settings, Download, Home, Plus, RefreshCw, Copy, Check, Rocket, MessageSquare, Play, Code2 } from 'lucide-react';
 import { analytics } from './utils/analytics';
 
@@ -23,12 +23,12 @@ import { useAppNavigation } from './hooks/useAppNavigation';
 
 /**
  * Check if the current URL path is a deployed site route.
- * Pattern: /{slug} where slug is 8 alphanumeric characters.
+ * Pattern: /{slug} where slug is a base64url string (6+ chars from [A-Za-z0-9_-]).
  */
 function isSiteRoute(): boolean {
     const path = window.location.pathname;
     const segments = path.split('/').filter(Boolean);
-    return segments.length === 1 && /^[a-z0-9]{8}$/.test(segments[0]);
+    return segments.length === 1 && /^[A-Za-z0-9_-]{6,}$/.test(segments[0]);
 }
 
 function isPrismaRoute(): boolean {
@@ -50,6 +50,7 @@ function AppContent() {
     setCode: editor.setCode,
     setPendingCode: editor.setPendingCode,
     pushToHistory: editor.pushToHistory,
+    onGenerationSuccess: () => setShowFeedback(true),
   });
 
   // UI-only state
@@ -72,20 +73,6 @@ function AppContent() {
     showToast('Started new chat (Reset All)', 'info');
     analytics.track('new_chat');
   };
-
-  // Show feedback after successful code generation
-  const prevLoadingRef = useRef(chat.isLoading);
-  useEffect(() => {
-    if (prevLoadingRef.current && !chat.isLoading) {
-      // Loading just finished — check if last message is a successful assistant response
-      const lastMsg = chat.messages[chat.messages.length - 1];
-      const isAssistantSuccess = lastMsg?.role === 'assistant' && !lastMsg.content.startsWith('❌');
-      if (isAssistantSuccess && chat.messages.length >= 2) {
-        setShowFeedback(true);
-      }
-    }
-    prevLoadingRef.current = chat.isLoading;
-  }, [chat.isLoading, chat.messages]);
 
   // Render landing if needed
   if (navigation.showLanding) {
@@ -251,7 +238,6 @@ function AppContent() {
             <CodeEditor
               code={editor.code}
               onChange={(val) => editor.setCode(val || '')}
-              isLoading={chat.isLoading}
               activeTab={navigation.activeTab}
               onTabChange={navigation.setActiveTab}
             />

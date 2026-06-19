@@ -6,16 +6,17 @@ import { formatApiError } from '../utils/errors';
 import { analytics } from '../utils/analytics';
 import { useToast } from '../components/Toast';
 import { DEMO_HTML } from '../constants/app';
-import type { Message, FileAttachment, ChatState, ChatActions, ApiSettings } from '../types';
+import type { Message, FileAttachment, ChatState, ChatActions, ApiSettings, SeoSettings } from '../types';
 
 interface UseChatOptions {
     apiSettings: ApiSettings;
-    seoSettings: import('../types').SeoSettings;
+    seoSettings: SeoSettings;
     code: string;
     isDefaultCode: boolean;
     setCode: (code: string) => void;
     setPendingCode: (code: string | null) => void;
     pushToHistory: () => void;
+    onGenerationSuccess?: () => void;
 }
 
 /**
@@ -23,7 +24,7 @@ interface UseChatOptions {
  */
 export function useChat(options: UseChatOptions): ChatState & ChatActions {
     const { showToast } = useToast();
-    const { apiSettings, seoSettings, code, isDefaultCode, setCode, setPendingCode, pushToHistory } = options;
+    const { apiSettings, seoSettings, code, isDefaultCode, setCode, setPendingCode, pushToHistory, onGenerationSuccess } = options;
 
     const [messages, setMessages] = useLocalStorage<Message[]>(
         STORAGE_KEYS.CHAT_MESSAGES,
@@ -58,8 +59,10 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
         // Check for API key
         if (!apiSettings.apiKey) {
             setCode(DEMO_HTML);
+            setLastPrompt(message);
             setMessages(prev => [
                 ...prev,
+                { role: 'user', content: message },
                 { role: 'assistant', content: "Here's a sample of what AI Coder can build. Add your free API key in Settings to generate your own apps." }
             ]);
             return;
@@ -87,6 +90,7 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
         // Loading message — will be replaced by onStatus with real activity
         setMessages(prev => [...prev, { role: 'assistant', content: '⚡ Generating...' }]);
 
+        let succeeded = false;
         try {
             let accumulatedCode = '';
 
@@ -116,7 +120,8 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
                 // Reset accumulatedCode on retry so chunks don't stack
                 () => {
                     accumulatedCode = '';
-                }
+                },
+                controller.signal
             );
 
             if (isDefaultCode) {
@@ -158,6 +163,7 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
                     web_search: !!result.searchData,
                 });
             }
+            succeeded = true;
         } catch (error) {
             const friendlyError = formatApiError(error);
             setLastError(friendlyError);
@@ -177,8 +183,11 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
         } finally {
             setIsLoading(false);
             abortControllerRef.current = null;
+            if (succeeded) {
+                onGenerationSuccess?.();
+            }
         }
-    }, [apiSettings, seoSettings, code, isDefaultCode, setCode, setPendingCode, pushToHistory, showToast, setMessages]);
+    }, [apiSettings, seoSettings, code, isDefaultCode, setCode, setPendingCode, pushToHistory, showToast, setMessages, onGenerationSuccess]);
 
     const retry = useCallback(() => {
         if (lastPrompt && !isLoading) {

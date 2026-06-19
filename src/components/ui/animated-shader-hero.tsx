@@ -335,36 +335,36 @@ const useShaderBackground = () => {
 
 
 
-    const resize = () => {
-        if (!canvasRef.current) return;
-
-        const canvas = canvasRef.current;
-        const dpr = Math.max(1, 0.5 * window.devicePixelRatio);
-
-        canvas.width = window.innerWidth * dpr;
-        canvas.height = window.innerHeight * dpr;
-
-        if (rendererRef.current) {
-            rendererRef.current.updateScale(dpr);
-        }
-    };
-
-    const loop = (now: number) => {
-        if (!rendererRef.current || !pointersRef.current) return;
-
-        rendererRef.current.updateMouse(pointersRef.current.first);
-        rendererRef.current.updatePointerCount(pointersRef.current.count);
-        rendererRef.current.updatePointerCoords(pointersRef.current.coords);
-        rendererRef.current.updateMove(pointersRef.current.move);
-        rendererRef.current.render(now);
-        animationFrameRef.current = requestAnimationFrame(loop);
-    };
-
     useEffect(() => {
         if (!canvasRef.current) return;
 
         const canvas = canvasRef.current;
         const dpr = Math.max(1, 0.5 * window.devicePixelRatio);
+
+        const resize = () => {
+            if (!canvasRef.current) return;
+
+            const currentCanvas = canvasRef.current;
+            const currentDpr = Math.max(1, 0.5 * window.devicePixelRatio);
+
+            currentCanvas.width = window.innerWidth * currentDpr;
+            currentCanvas.height = window.innerHeight * currentDpr;
+
+            if (rendererRef.current) {
+                rendererRef.current.updateScale(currentDpr);
+            }
+        };
+
+        const loop = (now: number) => {
+            if (!rendererRef.current || !pointersRef.current) return;
+
+            rendererRef.current.updateMouse(pointersRef.current.first);
+            rendererRef.current.updatePointerCount(pointersRef.current.count);
+            rendererRef.current.updatePointerCoords(pointersRef.current.coords);
+            rendererRef.current.updateMove(pointersRef.current.move);
+            rendererRef.current.render(now);
+            animationFrameRef.current = requestAnimationFrame(loop);
+        };
 
         rendererRef.current = new WebGLRenderer(canvas, dpr);
         pointersRef.current = new PointerHandler(canvas, dpr);
@@ -446,7 +446,7 @@ const ScrambleText: React.FC<{ text: string; className?: string; delay?: number 
                         .join("")
                 );
 
-                if (iteration >= text.length) {
+                if (iteration >= text.length && interval !== null) {
                     clearInterval(interval);
                 }
 
@@ -458,7 +458,9 @@ const ScrambleText: React.FC<{ text: string; className?: string; delay?: number 
 
         return () => {
             clearTimeout(timeout);
-            clearInterval(interval);
+            if (interval !== null) {
+                clearInterval(interval);
+            }
         };
     }, [text, delay]);
 

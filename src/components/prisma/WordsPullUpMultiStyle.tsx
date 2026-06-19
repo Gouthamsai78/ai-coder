@@ -9,9 +9,10 @@ interface TextSegment {
 interface WordsPullUpMultiStyleProps {
     segments: TextSegment[];
     className?: string;
+    style?: React.CSSProperties;
 }
 
-const WordsPullUpMultiStyle: React.FC<WordsPullUpMultiStyleProps> = ({ segments, className = '' }) => {
+const WordsPullUpMultiStyle: React.FC<WordsPullUpMultiStyleProps> = ({ segments, className = '', style }) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true });
 
@@ -32,7 +33,7 @@ const WordsPullUpMultiStyle: React.FC<WordsPullUpMultiStyleProps> = ({ segments,
     }
 
     return (
-        <div ref={ref} className={`inline-flex flex-wrap justify-center ${className}`}>
+        <div ref={ref} className={`inline-flex flex-wrap justify-center ${className}`} style={style}>
             {allWords.map((item) => (
                 <span key={item.index} className="inline-flex overflow-hidden">
                     <motion.span

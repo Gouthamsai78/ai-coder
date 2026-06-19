@@ -1,4 +1,4 @@
-import { motion, useInView, useScroll, useTransform } from 'framer-motion';
+import { motion, useInView, useScroll, useTransform, type MotionValue } from 'framer-motion';
 import { useRef } from 'react';
 import { ArrowRight, Check } from 'lucide-react';
 import WordsPullUp from './WordsPullUp';
@@ -7,7 +7,7 @@ import WordsPullUpMultiStyle from './WordsPullUpMultiStyle';
 // ─── Animated Letter (scroll-linked opacity) ──────────────────────
 const AnimatedLetter: React.FC<{
     char: string;
-    progress: ReturnType<typeof useTransform>;
+    progress: MotionValue<number>;
     index: number;
     totalChars: number;
 }> = ({ char, progress, index, totalChars }) => {
