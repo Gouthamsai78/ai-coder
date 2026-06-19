@@ -56,24 +56,22 @@ const FeedbackWidget: React.FC = () => {
 
     return (
         <>
-            {/* Floating Button */}
+            {/* Floating Button — compact on mobile (above bottom nav), full on desktop */}
             <button
                 onClick={handleOpen}
-                className="fixed z-[100] flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-r from-orange-500 to-purple-500 text-white text-sm font-medium shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-105 active:scale-95 transition-all duration-200"
-                style={{
-                    bottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))',
-                    right: '1.5rem',
-                }}
+                className="fixed z-[100] flex items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-purple-500 text-white shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-105 active:scale-95 transition-all duration-200
+                    h-10 w-10 bottom-20 right-4
+                    lg:h-auto lg:w-auto lg:px-4 lg:py-3 lg:bottom-6 lg:right-6"
                 aria-label="Give feedback"
             >
                 <Flame className="h-4 w-4" />
-                <span className="hidden sm:inline">Roast us!</span>
+                <span className="hidden lg:inline ml-2">Roast us!</span>
             </button>
 
-            {/* Tooltip nudge */}
+            {/* Tooltip nudge — desktop only */}
             {hasShownTooltip && !isOpen && (
                 <div
-                    className="fixed z-[100] px-3 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10 text-xs text-white/70 animate-pulse pointer-events-none"
+                    className="hidden lg:block fixed z-[100] px-3 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10 text-xs text-white/70 animate-pulse pointer-events-none"
                     style={{
                         bottom: 'max(4.5rem, env(safe-area-inset-bottom, 4.5rem))',
                         right: '1.5rem',

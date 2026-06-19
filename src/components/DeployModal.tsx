@@ -54,10 +54,8 @@ const DeployModal: React.FC<DeployModalProps> = ({ code, githubToken, onClose, o
                 if (newSlug) {
                     body.customSlug = newSlug;
                 }
-                // If renaming, send old slug so API can delete old entry
-                if (showRename && renameSlug.trim() && renameSlug.trim().toLowerCase() !== existingSlug) {
-                    body.oldSlug = existingSlug;
-                }
+                // Always send oldSlug in update mode to prove ownership
+                body.oldSlug = existingSlug;
             } else {
                 // First deploy: use custom slug if provided
                 if (customSlug.trim()) {

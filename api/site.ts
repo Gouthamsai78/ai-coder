@@ -124,13 +124,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         error: 'Invalid slug. Use 3-30 lowercase letters, numbers, or hyphens.',
                     });
                 }
+
                 const { data: existing } = await supabase
                     .from('deployed_sites')
                     .select('slug')
                     .eq('slug', normalized)
                     .limit(1);
+
                 if (existing && existing.length > 0) {
-                    isUpdate = true;
+                    // Slug exists — only allow if this is an update (oldSlug provided)
+                    if (oldSlug && typeof oldSlug === 'string' && oldSlug === normalized) {
+                        isUpdate = true;
+                    } else if (oldSlug && typeof oldSlug === 'string' && oldSlug !== normalized) {
+                        // Rename to a slug that already exists — block
+                        return res.status(409).json({ error: 'This URL is already taken. Choose a different one.' });
+                    } else {
+                        // New deploy with existing slug — block
+                        return res.status(409).json({ error: 'This URL is already taken. Choose a different one.' });
+                    }
                 }
                 slug = normalized;
             } else {
