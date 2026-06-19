@@ -13,6 +13,12 @@ function generateSlug(): string {
     return randomBytes(4).toString('base64url');
 }
 
+const RESERVED_SLUGS = ['api', 'admin', 'settings', 'login', 'signup', 'deploy', 'static', 'assets'];
+
+function isValidCustomSlug(slug: string): boolean {
+    return /^[a-z0-9-]{3,30}$/.test(slug) && !RESERVED_SLUGS.includes(slug);
+}
+
 function escapeHtml(str: string): string {
     return str.replace(/[&<>"']/g, (char) => {
         const map: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -88,7 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // POST /api/site → deploy HTML
     if (req.method === 'POST') {
         try {
-            const { html, title } = req.body;
+            const { html, title, customSlug } = req.body;
 
             if (!html || typeof html !== 'string') {
                 return res.status(400).json({ error: 'HTML content is required' });
@@ -98,9 +104,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(400).json({ error: 'HTML too large (max 5MB)' });
             }
 
-            let slug = generateSlug();
-            while (sitesStore.has(slug)) {
+            let slug: string;
+
+            if (customSlug && typeof customSlug === 'string') {
+                const normalized = customSlug.toLowerCase().trim();
+                if (!isValidCustomSlug(normalized)) {
+                    return res.status(400).json({
+                        error: 'Invalid slug. Use 3-30 lowercase letters, numbers, or hyphens.',
+                    });
+                }
+                if (sitesStore.has(normalized)) {
+                    return res.status(409).json({
+                        error: 'This URL is already taken. Try another one.',
+                    });
+                }
+                slug = normalized;
+            } else {
                 slug = generateSlug();
+                while (sitesStore.has(slug)) {
+                    slug = generateSlug();
+                }
             }
 
             sitesStore.set(slug, {

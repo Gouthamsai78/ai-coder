@@ -17,6 +17,7 @@ const DeployModal: React.FC<DeployModalProps> = ({ code, githubToken, onClose, o
     const [deployResult, setDeployResult] = useState<DeployResult | null>(null);
     const [oneClickResult, setOneClickResult] = useState<{ slug: string; url: string } | null>(null);
     const [copied, setCopied] = useState(false);
+    const [customSlug, setCustomSlug] = useState('');
     const codePenFormRef = useRef<HTMLFormElement>(null);
 
     useEffect(() => {
@@ -32,10 +33,14 @@ const DeployModal: React.FC<DeployModalProps> = ({ code, githubToken, onClose, o
         setDeployStatus('loading');
 
         try {
+            const body: { html: string; title: string; customSlug?: string } = { html: code, title: document.title };
+            if (customSlug.trim()) {
+                body.customSlug = customSlug.trim().toLowerCase();
+            }
             const res = await fetch('/api/site', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ html: code, title: document.title }),
+                body: JSON.stringify(body),
             });
 
             if (!res.ok) {
@@ -103,6 +108,7 @@ const DeployModal: React.FC<DeployModalProps> = ({ code, githubToken, onClose, o
         setDeployStatus('idle');
         setDeployResult(null);
         setOneClickResult(null);
+        setCustomSlug('');
     };
 
     return (
@@ -137,6 +143,27 @@ const DeployModal: React.FC<DeployModalProps> = ({ code, githubToken, onClose, o
                 <div className="p-6 space-y-4">
                     {deployStatus === 'idle' && (
                         <>
+                            {/* Custom Slug Input */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                                    Custom URL path <span className="text-[hsl(var(--muted-foreground)/.6)]">(optional)</span>
+                                </label>
+                                <div className="flex items-center gap-0 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--secondary))] overflow-hidden focus-within:ring-1 focus-within:ring-emerald-500/50">
+                                    <span className="pl-3 pr-1 text-xs text-[hsl(var(--muted-foreground))] shrink-0">aicoderbygoutham.vercel.app/</span>
+                                    <input
+                                        type="text"
+                                        value={customSlug}
+                                        onChange={(e) => setCustomSlug(e.target.value.replace(/[^a-z0-9-]/g, '').toLowerCase())}
+                                        placeholder="my-cool-app"
+                                        maxLength={30}
+                                        className="flex-1 py-2.5 pr-3 bg-transparent text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground)/.4)] focus:outline-none min-w-0"
+                                    />
+                                </div>
+                                {customSlug && customSlug.length < 3 && (
+                                    <p className="text-[11px] text-amber-400">At least 3 characters</p>
+                                )}
+                            </div>
+
                             {/* AI Coder One-Click Deploy — PRIMARY */}
                             <button
                                 onClick={handleOneClickDeploy}

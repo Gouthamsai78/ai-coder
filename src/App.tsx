@@ -22,12 +22,12 @@ import { useAppNavigation } from './hooks/useAppNavigation';
 
 /**
  * Check if the current URL path is a deployed site route.
- * Pattern: /{slug} where slug is a base64url string (6+ chars from [A-Za-z0-9_-]).
+ * Matches both random base64url slugs and custom slugs (lowercase, 3-30 chars, alphanumeric + hyphens).
  */
 function isSiteRoute(): boolean {
     const path = window.location.pathname;
     const segments = path.split('/').filter(Boolean);
-    return segments.length === 1 && /^[A-Za-z0-9_-]{6,}$/.test(segments[0]);
+    return segments.length === 1 && /^[A-Za-z0-9_-]{3,30}$/.test(segments[0]);
 }
 
 
