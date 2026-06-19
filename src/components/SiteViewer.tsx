@@ -57,9 +57,16 @@ function SiteViewer(): React.ReactNode {
                 if (cancelled) return;
 
                 if (!res.ok) {
+                    let errorMsg = 'Failed to load site';
+                    try {
+                        const errorData = await res.json();
+                        if (errorData.error) errorMsg = errorData.error;
+                    } catch {
+                        // response isn't JSON, use default message
+                    }
                     setError(res.status === 404
-                        ? 'Site not found. It may have expired or was never deployed.'
-                        : 'Failed to load site'
+                        ? errorMsg
+                        : errorMsg
                     );
                     setLoading(false);
                     return;

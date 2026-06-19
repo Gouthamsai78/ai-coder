@@ -64,48 +64,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(500).json({ error: 'Storage not configured' });
         }
 
-        const { data: site } = await supabase
-            .from('deployed_sites')
-            .select('html, title')
-            .eq('slug', id)
-            .single();
+        try {
+            const { data: sites, error } = await supabase
+                .from('deployed_sites')
+                .select('html, title')
+                .eq('slug', id)
+                .limit(1);
 
-        if (!site) {
+            if (error) {
+                console.error('Supabase GET error:', error.message, error.code, error.details);
+                return res.status(500).json({ error: 'Failed to load site' });
+            }
+
+            const site = sites && sites.length > 0 ? sites[0] : null;
+
+            if (!site || !site.html) {
+                return res.status(404).json({ error: 'Site not found. It may have expired or was never deployed.' });
+            }
+
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            return res.status(404).send(`<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Site Not Found - AI Coder</title>
-    <style>
-        body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0a0a0a; color: #fff; font-family: system-ui, sans-serif; }
-        .container { text-align: center; padding: 2rem; }
-        h1 { font-size: 4rem; margin: 0; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        p { color: #888; margin: 1rem 0 2rem; }
-        a { color: #3b82f6; text-decoration: none; padding: 0.75rem 1.5rem; border: 1px solid #3b82f6; border-radius: 8px; transition: all 0.2s; }
-        a:hover { background: #3b82f6; color: #fff; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>404</h1>
-        <p>This site has expired or was never deployed.</p>
-        <a href="/">Go to AI Coder</a>
-    </div>
-</body>
-</html>`);
+            res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300');
+            res.setHeader('X-Robots-Tag', 'index, follow');
+
+            if (site.title) {
+                res.setHeader('X-Site-Title', escapeHtml(site.title));
+            }
+
+            return res.status(200).send(site.html);
+        } catch (err) {
+            console.error('GET /api/site crash:', err);
+            return res.status(500).json({ error: 'Internal server error' });
         }
-
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300');
-        res.setHeader('X-Robots-Tag', 'index, follow');
-
-        if (site.title) {
-            res.setHeader('X-Site-Title', escapeHtml(site.title));
-        }
-
-        return res.status(200).send(site.html);
     }
 
     // POST /api/site → deploy HTML
@@ -138,8 +127,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     .from('deployed_sites')
                     .select('slug')
                     .eq('slug', normalized)
-                    .single();
-                if (existing) {
+                    .limit(1);
+                if (existing && existing.length > 0) {
                     return res.status(409).json({
                         error: 'This URL is already taken. Try another one.',
                     });
@@ -151,14 +140,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     .from('deployed_sites')
                     .select('slug')
                     .eq('slug', slug)
-                    .single();
-                while (existing) {
+                    .limit(1);
+                while (existing && existing.length > 0) {
                     slug = generateSlug();
                     const check = await supabase
                         .from('deployed_sites')
                         .select('slug')
                         .eq('slug', slug)
-                        .single();
+                        .limit(1);
                     existing = check.data;
                 }
             }
