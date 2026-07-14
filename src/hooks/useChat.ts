@@ -15,7 +15,6 @@ interface UseChatOptions {
     isDefaultCode: boolean;
     setCode: (code: string) => void;
     setPendingCode: (code: string | null) => void;
-    pushToHistory: () => void;
     onGenerationSuccess?: () => void;
 }
 
@@ -24,7 +23,7 @@ interface UseChatOptions {
  */
 export function useChat(options: UseChatOptions): ChatState & ChatActions {
     const { showToast } = useToast();
-    const { apiSettings, seoSettings, code, isDefaultCode, setCode, setPendingCode, pushToHistory, onGenerationSuccess } = options;
+    const { apiSettings, seoSettings, code, isDefaultCode, setCode, setPendingCode, onGenerationSuccess } = options;
 
     const [messages, setMessages] = useLocalStorage<Message[]>(
         STORAGE_KEYS.CHAT_MESSAGES,
@@ -82,11 +81,6 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
         const newMessages: Message[] = [...messagesRef.current, { role: 'user', content: message }];
         setMessages(newMessages);
         setIsLoading(true);
-
-        // Save history for modifications
-        if (!isDefaultCode) {
-            pushToHistory();
-        }
 
         // Loading message — will be replaced by onStatus with real activity
         setMessages(prev => [...prev, { role: 'assistant', content: '⚡ Generating...' }]);
@@ -166,8 +160,14 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
             }
             succeeded = true;
         } catch (error) {
-            const isUserAbort = userStoppedRef.current || (error instanceof DOMException && error.name === 'AbortError');
+            const isAbort = error instanceof DOMException && error.name === 'AbortError';
+            const isUserAbort = userStoppedRef.current || isAbort;
             userStoppedRef.current = false;
+
+            // A newer send superseded this one — stay silent, don't touch shared state.
+            if (isAbort && abortControllerRef.current !== controller) {
+                return;
+            }
 
             if (isUserAbort) {
                 // User clicked stop — remove loading message, no error
@@ -194,13 +194,16 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
                 });
             }
         } finally {
-            setIsLoading(false);
-            abortControllerRef.current = null;
+            // Only clear shared state if THIS invocation still owns the controller.
+            if (abortControllerRef.current === controller) {
+                setIsLoading(false);
+                abortControllerRef.current = null;
+            }
             if (succeeded) {
                 onGenerationSuccess?.();
             }
         }
-    }, [apiSettings, seoSettings, code, isDefaultCode, setCode, setPendingCode, pushToHistory, showToast, setMessages, onGenerationSuccess]);
+    }, [apiSettings, seoSettings, code, isDefaultCode, setCode, setPendingCode, showToast, setMessages, onGenerationSuccess]);
 
     const retry = useCallback(() => {
         if (lastPrompt && !isLoading) {

@@ -63,9 +63,13 @@ const DeployModal: React.FC<DeployModalProps> = ({ code, githubToken, onClose, o
                 }
             }
 
+            const deployToken = import.meta.env.VITE_DEPLOY_TOKEN as string | undefined;
             const res = await fetch('/api/site', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(deployToken ? { 'x-deploy-token': deployToken } : {}),
+                },
                 body: JSON.stringify(body),
             });
 

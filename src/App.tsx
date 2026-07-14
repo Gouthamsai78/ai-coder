@@ -21,13 +21,26 @@ import { useChat } from './hooks/useChat';
 import { useAppNavigation } from './hooks/useAppNavigation';
 
 /**
+ * Reserved single-segment paths that are NOT deployed-site slugs.
+ * Mirrors RESERVED_SLUGS in api/site.ts plus known client/static routes.
+ */
+const RESERVED_ROUTES = new Set([
+    'api', 'admin', 'settings', 'login', 'signup', 'deploy', 'static', 'assets',
+    'about', 'pricing', 'dashboard', 'index.html', 'robots.txt', 'sitemap.xml', 'favicon.ico',
+]);
+
+/**
  * Check if the current URL path is a deployed site route.
- * Matches both random base64url slugs and custom slugs (lowercase, 3-30 chars, alphanumeric + hyphens).
+ * Matches both random base64url slugs and custom slugs (lowercase, 3-30 chars, alphanumeric + hyphens),
+ * excluding reserved app/static routes.
  */
 function isSiteRoute(): boolean {
     const path = window.location.pathname;
     const segments = path.split('/').filter(Boolean);
-    return segments.length === 1 && /^[A-Za-z0-9_-]{3,30}$/.test(segments[0]);
+    if (segments.length !== 1) return false;
+    const slug = segments[0];
+    if (RESERVED_ROUTES.has(slug.toLowerCase())) return false;
+    return /^[A-Za-z0-9_-]{3,30}$/.test(slug);
 }
 
 
@@ -45,7 +58,6 @@ function AppContent() {
     isDefaultCode: editor.isDefault,
     setCode: editor.setCode,
     setPendingCode: editor.setPendingCode,
-    pushToHistory: editor.pushToHistory,
     onGenerationSuccess: () => setShowFeedback(true),
   });
 

@@ -79,7 +79,9 @@ export async function searchWeb(query: string): Promise<SearchWebResult | null> 
         }
 
         const data = await response.json();
-        const rawResults: SearchResult[] = data.results || [];
+        const rawResults: SearchResult[] = (data.results || []).filter(
+            (r: Partial<SearchResult>): r is SearchResult => typeof r?.content === 'string'
+        );
         const answer: string = data.answer || '';
 
         if (!rawResults.length && !answer) {

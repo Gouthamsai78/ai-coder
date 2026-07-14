@@ -41,6 +41,7 @@ function SiteViewerLoading() {
 function SiteViewer(): React.ReactNode {
     const siteId = useMemo(() => getSiteId(), []);
     const [html, setHtml] = useState<string | null>(null);
+    const [loaded, setLoaded] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -75,6 +76,7 @@ function SiteViewer(): React.ReactNode {
                 const htmlContent = await res.text();
                 if (!cancelled) {
                     setHtml(htmlContent);
+                    setLoaded(true);
                     setLoading(false);
                 }
             } catch {
@@ -100,7 +102,7 @@ function SiteViewer(): React.ReactNode {
         return <SiteViewerLoading />;
     }
 
-    if (error || !html) {
+    if (error || !loaded || html === null) {
         return <SiteViewerError message={error || 'This site does not exist.'} />;
     }
 
