@@ -20,10 +20,28 @@ function generateSlug(): string {
     return randomBytes(4).toString('base64url');
 }
 
-const RESERVED_SLUGS = ['api', 'admin', 'settings', 'login', 'signup', 'deploy', 'static', 'assets'];
+const RESERVED_SLUGS = [
+    'api', 'admin', 'settings', 'login', 'signup', 'deploy', 'static', 'assets',
+    'robots.txt', 'sitemap.xml', 'favicon.ico', 'index.html',
+];
 
 function isValidCustomSlug(slug: string): boolean {
-    return /^[a-z0-9-]{3,30}$/.test(slug) && !RESERVED_SLUGS.includes(slug);
+    // 3-30 chars, lowercase alphanumeric + hyphen, but not all-hyphen and no
+    // leading/trailing hyphen.
+    if (!/^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])?$/.test(slug)) return false;
+    return !RESERVED_SLUGS.includes(slug);
+}
+
+/** Sanitize a value destined for an HTTP header — strip CR/LF and control chars. */
+function sanitizeHeaderValue(str: string): string {
+    let out = '';
+    for (const ch of str) {
+        const code = ch.charCodeAt(0);
+        // Drop C0 controls (incl. CR/LF/tab) and DEL.
+        if (code < 0x20 || code === 0x7f) continue;
+        out += ch;
+    }
+    return out.trim();
 }
 
 function escapeHtml(str: string): string {
@@ -85,9 +103,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300');
             res.setHeader('X-Robots-Tag', 'index, follow');
+            // Sandbox the served HTML so direct navigation to this endpoint cannot
+            // execute script in the app's own origin (localStorage holds API keys).
+            res.setHeader('Content-Security-Policy', 'sandbox allow-scripts allow-forms allow-popups allow-modals;');
 
             if (site.title) {
-                res.setHeader('X-Site-Title', escapeHtml(site.title));
+                const safeTitle = sanitizeHeaderValue(escapeHtml(site.title));
+                if (safeTitle) {
+                    res.setHeader('X-Site-Title', safeTitle);
+                }
             }
 
             return res.status(200).send(site.html);
@@ -103,8 +127,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(500).json({ error: 'Storage not configured' });
         }
 
+        // Optional write protection: if DEPLOY_TOKEN is configured, require it.
+        const deployToken = process.env.DEPLOY_TOKEN;
+        if (deployToken) {
+            const provided = req.headers['x-deploy-token'];
+            if (provided !== deployToken) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+        }
+
         try {
-            const { html, title, customSlug, oldSlug } = req.body;
+            const body = (req.body && typeof req.body === 'object') ? req.body : {};
+            const { html, title, customSlug, oldSlug } = body as {
+                html?: unknown; title?: unknown; customSlug?: unknown; oldSlug?: unknown;
+            };
 
             if (!html || typeof html !== 'string') {
                 return res.status(400).json({ error: 'HTML content is required' });
@@ -162,14 +198,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }
             }
 
-            // Handle rename: delete old slug entry if slug changed
-            if (oldSlug && typeof oldSlug === 'string' && oldSlug !== slug) {
-                await supabase
-                    .from('deployed_sites')
-                    .delete()
-                    .eq('slug', oldSlug);
-            }
-
             const siteData = {
                 slug,
                 html,
@@ -186,7 +214,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const { error } = await supabase
                     .from('deployed_sites')
                     .insert(siteData);
-                if (error) throw error;
+                if (error) {
+                    // Postgres unique_violation — slug taken by a concurrent deploy.
+                    if ((error as { code?: string }).code === '23505') {
+                        return res.status(409).json({ error: 'This URL is already taken. Choose a different one.' });
+                    }
+                    throw error;
+                }
+            }
+
+            // Rename: remove the old slug only AFTER the new row is safely written,
+            // so a failure above never destroys the existing site.
+            if (oldSlug && typeof oldSlug === 'string' && oldSlug !== slug) {
+                const { error: delError } = await supabase
+                    .from('deployed_sites')
+                    .delete()
+                    .eq('slug', oldSlug);
+                if (delError) {
+                    console.error('POST /api/site: failed to delete old slug', oldSlug, delError.message);
+                }
             }
 
             const url = `https://aicoderbygoutham.vercel.app/${slug}`;
@@ -197,7 +243,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 url,
                 created_at: new Date().toISOString(),
             });
-        } catch {
+        } catch (err) {
+            console.error('POST /api/site crash:', err);
             return res.status(500).json({
                 error: 'Deployment failed. Please try again.',
             });

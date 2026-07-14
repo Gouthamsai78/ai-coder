@@ -114,6 +114,7 @@ Based on the conversation above, generate the COMPLETE updated HTML file. Always
     let fullContent = '';
 
     for await (const chunk of result.stream) {
+        if (signal?.aborted) break;
         const chunkText = chunk.text();
         if (chunkText) {
             fullContent += chunkText;
@@ -121,7 +122,11 @@ Based on the conversation above, generate the COMPLETE updated HTML file. Always
         }
     }
 
-    return processResponse(fullContent);
+    if (signal?.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
+    }
+
+    return processResponse(fullContent, currentCode);
 };
 
 /**
@@ -186,7 +191,7 @@ Based on the conversation above, generate the COMPLETE updated HTML file. Always
         }
     }
 
-    return processResponse(fullContent);
+    return processResponse(fullContent, currentCode);
 };
 
 // ============================================
@@ -194,28 +199,84 @@ Based on the conversation above, generate the COMPLETE updated HTML file. Always
 // ============================================
 
 /**
- * Process AI response to extract code and summary
- * Cleans up markdown artifacts and parses the summary section
+ * Strip a single leading ```html / ``` fence and trailing ``` if the model
+ * wrapped its whole answer in a markdown code block. Inner backticks (legit
+ * content like <pre> samples) are preserved.
  */
-const processResponse = (
-    fullContent: string
-): { code: string; summary: string } => {
-    // Clean up markdown code blocks if present (common AI quirk)
-    let cleanedContent = fullContent
-        .replace(/```html/g, '')
-        .replace(/```/g, '')
-        .trim();
+const stripOuterCodeFence = (content: string): string => {
+    let out = content.trim();
+    const fenceStart = /^```(?:html)?\s*\n?/i;
+    if (fenceStart.test(out)) {
+        out = out.replace(fenceStart, '');
+        out = out.replace(/\n?```\s*$/, '');
+    }
+    return out.trim();
+};
 
-    // Parse summary
-    let summary = 'I have updated the code based on your request.';
+/**
+ * Apply MODE 2 SEARCH/REPLACE blocks against the current code.
+ * Format per system prompt:
+ *   <<<<<<< SEARCH
+ *   [exact code]
+ *   =======
+ *   [replacement]
+ *   >>>>>>> REPLACE
+ * Returns the patched code. Throws if a SEARCH block does not match.
+ */
+const applySearchReplace = (currentCode: string, blocksText: string): string => {
+    const blockRegex = /<{5,}\s*SEARCH\s*\n([\s\S]*?)\n={5,}\s*\n([\s\S]*?)\n>{5,}\s*REPLACE/g;
+    let updated = currentCode;
+    let match: RegExpExecArray | null;
+    let applied = 0;
 
-    if (cleanedContent.includes('---SUMMARY---')) {
-        const parts = cleanedContent.split('---SUMMARY---');
-        cleanedContent = parts[0].trim();
-        summary = parts[1]?.trim() || summary;
+    while ((match = blockRegex.exec(blocksText)) !== null) {
+        const search = match[1];
+        const replace = match[2];
+
+        if (!updated.includes(search)) {
+            throw new Error('SEARCH block did not match current code — the AI edit could not be applied. Try rephrasing your request.');
+        }
+        // Replace only the first occurrence (blocks are meant to be unique).
+        updated = updated.replace(search, () => replace);
+        applied++;
     }
 
-    return { code: cleanedContent, summary };
+    if (applied === 0) {
+        throw new Error('No valid SEARCH/REPLACE blocks found in AI response.');
+    }
+
+    return updated;
+};
+
+/**
+ * Process AI response to extract code and summary.
+ * Handles both MODE 1 (full HTML) and MODE 2 (SEARCH/REPLACE blocks) —
+ * the latter is applied against currentCode.
+ */
+const processResponse = (
+    fullContent: string,
+    currentCode: string
+): { code: string; summary: string } => {
+    // Split off the summary first (use the FIRST marker only).
+    let body = fullContent;
+    let summary = 'I have updated the code based on your request.';
+
+    const summaryIdx = fullContent.indexOf('---SUMMARY---');
+    if (summaryIdx !== -1) {
+        body = fullContent.slice(0, summaryIdx);
+        summary = fullContent.slice(summaryIdx + '---SUMMARY---'.length).trim() || summary;
+    }
+
+    const cleaned = stripOuterCodeFence(body);
+
+    // MODE 2: SEARCH/REPLACE blocks — apply against current code.
+    if (/<{5,}\s*SEARCH/.test(cleaned)) {
+        const code = applySearchReplace(currentCode, cleaned);
+        return { code, summary };
+    }
+
+    // MODE 1: full HTML file.
+    return { code: cleaned, summary };
 };
 
 // ============================================

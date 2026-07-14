@@ -31,7 +31,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const prevMsgCount = useRef(messages.length);
     const { showToast } = useToast();
+
+    // Index-keyed UI state (copied/expanded) becomes stale when the messages
+    // array shrinks (e.g. retry truncates it and reuses indices). Reset on shrink.
+    useEffect(() => {
+        if (messages.length < prevMsgCount.current) {
+            setCopiedId(null);
+            setExpandedSearch(null);
+        }
+        prevMsgCount.current = messages.length;
+    }, [messages.length]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
