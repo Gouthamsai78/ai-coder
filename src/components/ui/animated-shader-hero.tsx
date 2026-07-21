@@ -91,6 +91,7 @@ interface HeroProps {
             onClick?: () => void;
         };
     };
+    children?: React.ReactNode;
     className?: string;
 }
 
@@ -473,6 +474,7 @@ const Hero: React.FC<HeroProps> = ({
     headline,
     subtitle,
     buttons,
+    children,
     className = ""
 }) => {
     const canvasRef = useShaderBackground();
@@ -544,6 +546,8 @@ const Hero: React.FC<HeroProps> = ({
                             )}
                         </div>
                     )}
+
+                    {children}
                 </div>
             </div>
         </div>

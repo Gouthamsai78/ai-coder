@@ -13,6 +13,19 @@ export default {
         sans: ['Almarai', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'sans-serif'],
         serif: ['"Instrument Serif"', 'serif'],
       },
+      animation: {
+        "shiny-text": "shiny-text 8s infinite",
+      },
+      keyframes: {
+        "shiny-text": {
+          "0%, 90%, 100%": {
+            "background-position": "calc(-100% - var(--shiny-width)) 0",
+          },
+          "30%, 60%": {
+            "background-position": "calc(100% + var(--shiny-width)) 0",
+          },
+        },
+      },
     },
   },
   plugins: [],
