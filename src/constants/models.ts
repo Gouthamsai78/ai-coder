@@ -7,6 +7,16 @@ import type { ApiProvider, ModelOption } from '../types';
 export const AI_MODELS: Record<ApiProvider, ModelOption[]> = {
     google: [
         {
+            id: 'gemini-3.6-flash',
+            name: 'Gemini 3.6 Flash',
+            description: 'Fastest Gemini model',
+        },
+        {
+            id: 'gemini-3.5-flash-lite',
+            name: 'Gemini 3.5 Flash Lite',
+            description: 'Lightweight ultra-fast model',
+        },
+        {
             id: 'gemini-3.5-flash',
             name: 'Gemini 3.5 Flash',
             description: 'Latest ultra-fast Gemini 3.5 model',
@@ -15,16 +25,6 @@ export const AI_MODELS: Record<ApiProvider, ModelOption[]> = {
             id: 'gemini-3-flash-preview',
             name: 'Gemini 3 Flash Preview',
             description: 'Latest Gemini 3 model (Free)',
-        },
-        {
-            id: 'gemini-2.0-flash',
-            name: 'Gemini 2.0 Flash',
-            description: 'Fast and capable (Free)',
-        },
-        {
-            id: 'gemini-1.5-pro',
-            name: 'Gemini 1.5 Pro',
-            description: 'Most capable Google model',
         },
     ],
     openrouter: [

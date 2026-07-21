@@ -54,16 +54,6 @@ export function formatApiError(error: unknown): string {
         return 'Request timed out. The AI service is busy - please try again.';
     }
 
-    // Streaming errors
-    if (lowerMessage.includes('stream') || lowerMessage.includes('abort')) {
-        return 'Connection interrupted during generation. Please try again.';
-    }
-
-    // JSON parsing errors (from response processing)
-    if (lowerMessage.includes('json') || lowerMessage.includes('parse') || lowerMessage.includes('syntax error')) {
-        return 'Failed to process AI response. Please try again with a simpler prompt.';
-    }
-
     // OpenRouter specific errors
     if (lowerMessage.includes('openrouter') && lowerMessage.includes('error')) {
         return 'OpenRouter service error. Please check your API key and try again.';
@@ -77,7 +67,18 @@ export function formatApiError(error: unknown): string {
         return 'Google AI service error. Please try again or switch to a different provider.';
     }
 
-    // Default fallback - more helpful than before
+    // JSON parsing errors (from response processing)
+    if (lowerMessage.includes('json') || lowerMessage.includes('parse') || lowerMessage.includes('syntax error')) {
+        return 'Failed to process AI response. Please try again with a simpler prompt.';
+    }
+
+    // Streaming errors — last resort, log real error for debugging
+    if (lowerMessage.includes('stream') || lowerMessage.includes('abort')) {
+        console.error('Stream/abort error (raw):', error);
+        return 'Connection interrupted during generation. Please try again.';
+    }
+
+    // Default fallback
     console.error('API Error:', error);
     return 'AI service error. Please check your API key, internet connection, and try again. If the problem persists, try a different model or provider.';
 }

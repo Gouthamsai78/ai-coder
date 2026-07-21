@@ -3,6 +3,7 @@ import { useLocalStorage } from './useLocalStorage';
 import { STORAGE_KEYS } from '../constants/storage';
 import { generateCodeStream } from '../services/ai';
 import { formatApiError } from '../utils/errors';
+import { reportError } from '../utils/errorReporter';
 import { analytics } from '../utils/analytics';
 import { useToast } from '../components/Toast';
 import { DEMO_HTML } from '../constants/app';
@@ -160,7 +161,9 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
             }
             succeeded = true;
         } catch (error) {
-            const isAbort = error instanceof DOMException && error.name === 'AbortError';
+            const isAbort = (error instanceof DOMException && error.name === 'AbortError')
+                || (error instanceof Error && error.name === 'GoogleGenerativeAIError'
+                    && error.message.toLowerCase().includes('abort'));
             const isUserAbort = userStoppedRef.current || isAbort;
             userStoppedRef.current = false;
 
@@ -180,6 +183,15 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
                 const friendlyError = formatApiError(error);
                 setLastError(friendlyError);
 
+                reportError(error, {
+                    model: apiSettings.model,
+                    provider: apiSettings.provider,
+                    messageCount: messagesRef.current.length,
+                    hasAttachments: !!attachments?.length,
+                    webSearchEnabled: !!apiSettings.webSearchEnabled,
+                    isRetry: !!lastPrompt,
+                });
+
                 // Remove loading message
                 setMessages(prev => prev.slice(0, -1));
                 setMessages(prev => [...prev, {
@@ -191,6 +203,11 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
                 analytics.track('generation_error', {
                     error_type: friendlyError,
                     provider: apiSettings.provider,
+                    model: apiSettings.model,
+                    message_count: messagesRef.current.length,
+                    has_attachments: !!attachments?.length,
+                    web_search: !!apiSettings.webSearchEnabled,
+                    is_retry: !!lastPrompt,
                 });
             }
         } finally {

@@ -46,10 +46,7 @@ const generateWithGoogleAI = async (
     // Configure model with system instruction
     const generativeModel = genAI.getGenerativeModel({
         model: modelName,
-        systemInstruction: {
-            role: 'user',
-            parts: [{ text: SYSTEM_PROMPT }]
-        }
+        systemInstruction: SYSTEM_PROMPT
     });
 
     // Build the chat history
