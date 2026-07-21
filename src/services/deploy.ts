@@ -75,16 +75,16 @@ export async function deployToGitHubGist(
         const rawUrl = data.files[filename]?.raw_url;
 
         // Create preview URL using multiple options:
-        // 1. gist.githack.com - Production CDN for gists (most reliable)
-        // 2. htmlpreview.github.io - Fallback option
+        // 1. htmlpreview.github.io - Renders HTML from GitHub raw URLs
+        // 2. raw.githack.com - CDN with correct MIME types
         let previewUrl: string | undefined;
 
-        if (owner && gistId) {
-            // githack.com production CDN - most reliable for serving gist HTML
-            previewUrl = `https://gistcdn.githack.com/${owner}/${gistId}/raw/${filename}`;
-        } else if (rawUrl) {
-            // Fallback to htmlpreview if we can't construct githack URL
+        if (rawUrl) {
+            // htmlpreview.github.io renders HTML files from GitHub
             previewUrl = `https://htmlpreview.github.io/?${rawUrl}`;
+        } else if (owner && gistId) {
+            // Fallback to githack CDN
+            previewUrl = `https://raw.githack.com/${owner}/${gistId}/raw/${filename}`;
         }
 
         return {

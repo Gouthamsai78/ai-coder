@@ -471,6 +471,35 @@ const DeployModal: React.FC<DeployModalProps> = ({ code, githubToken, onClose, o
                                 </div>
                             )}
 
+                            {/* Live Preview URL */}
+                            {deployResult?.previewUrl && (
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Live Preview</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            readOnly
+                                            value={deployResult.previewUrl}
+                                            className="flex-1 px-3 py-2 rounded-lg bg-[hsl(var(--secondary))] border border-[hsl(var(--border))] text-sm text-[hsl(var(--foreground))]"
+                                        />
+                                        <button
+                                            onClick={() => handleCopyLink(deployResult.previewUrl || '')}
+                                            className="p-2 rounded-lg bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--accent))] transition-colors"
+                                        >
+                                            {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                                        </button>
+                                        <a
+                                            href={deployResult.previewUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="p-2 rounded-lg bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--accent))] transition-colors"
+                                        >
+                                            <ExternalLink className="h-4 w-4" />
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
+
                             <button
                                 onClick={resetState}
                                 className="w-full py-2 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
