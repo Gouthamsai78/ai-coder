@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useLocalStorageString } from './useLocalStorage';
 import { STORAGE_KEYS } from '../constants/storage';
 import { DEFAULT_PROVIDER, getDefaultModel } from '../constants/models';
@@ -59,6 +59,13 @@ export function useApiSettings() {
         STORAGE_KEYS.SEO_SETTINGS,
         JSON.stringify(DEFAULT_SEO)
     );
+
+    // Migrate users from old default model to new default
+    useEffect(() => {
+        if (provider === 'google' && model === 'gemini-3.5-flash') {
+            setModel('gemini-3.6-flash');
+        }
+    }, [provider, model, setModel]);
 
     const setWebSearchEnabled = useCallback((enabled: boolean) => {
         setWebSearchRaw(enabled ? 'true' : 'false');
