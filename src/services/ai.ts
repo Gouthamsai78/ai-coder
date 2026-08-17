@@ -14,6 +14,7 @@
 import OpenAI from 'openai';
 import { GoogleGenerativeAI, type Part } from '@google/generative-ai';
 import type { ApiProvider, FileAttachment, SeoSettings } from '../types';
+import { GOOGLE_FALLBACK_MODEL } from '../constants/models';
 import { SYSTEM_PROMPT } from './ai/system-prompt';
 import { shouldSearch, searchWeb } from './search';
 
@@ -414,6 +415,11 @@ export const generateCodeStream = async (
     const MAX_RETRIES = 3;
     let lastError: unknown;
 
+    // If the selected Google model is busy, retry with the proven fallback
+    // model instead of hammering the same one.
+    let activeModel = model;
+    let fallbackUsed = false;
+
     // Retryable transient failures: rate limits (429) and server-side spikes
     // (5xx, "high demand", "temporarily"). Both are common with Gemini and
     // OpenRouter and usually resolve within seconds.
@@ -433,7 +439,10 @@ export const generateCodeStream = async (
             // SDK wraps any mid-stream connection drop as this exact message.
             // Do NOT match "Request aborted when reading from the stream"
             // (a user Stop) — hence the leading "error".
-            m.includes('error reading from the stream')
+            m.includes('error reading from the stream') ||
+            // SDK also throws this when a transient 503/HTML body arrives
+            // mid-stream instead of valid SSE.
+            m.includes('failed to parse stream')
         );
     };
 
@@ -443,7 +452,7 @@ export const generateCodeStream = async (
             if (provider === 'google') {
                 result = await generateWithGoogleAI(
                     apiKey,
-                    model,
+                    activeModel,
                     messages,
                     currentCode,
                     onChunk,
@@ -454,7 +463,7 @@ export const generateCodeStream = async (
             } else {
                 result = await generateWithOpenRouter(
                     apiKey,
-                    model,
+                    activeModel,
                     messages,
                     currentCode,
                     onChunk,
@@ -471,7 +480,16 @@ export const generateCodeStream = async (
 
             if (isRetryable && attempt < MAX_RETRIES - 1) {
                 const delay = Math.pow(2, attempt + 1) * 1000;
-                onStatus?.(`⏳ Service busy. Retrying in ${delay / 1000}s...`);
+
+                if (provider === 'google' && !fallbackUsed && activeModel !== GOOGLE_FALLBACK_MODEL) {
+                    fallbackUsed = true;
+                    activeModel = GOOGLE_FALLBACK_MODEL;
+                    onStatus?.(`⏳ ${model} is busy — retrying with ${GOOGLE_FALLBACK_MODEL} in ${delay / 1000}s...`);
+                    console.warn(`Model ${model} busy — switching to fallback ${GOOGLE_FALLBACK_MODEL}.`);
+                } else {
+                    onStatus?.(`⏳ Service busy. Retrying in ${delay / 1000}s...`);
+                }
+
                 console.warn(`Transient service error (attempt ${attempt + 1}/${MAX_RETRIES}). Retrying in ${delay / 1000}s...`);
                 onRetry?.();
                 await new Promise(resolve => setTimeout(resolve, delay));

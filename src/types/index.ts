@@ -52,6 +52,7 @@ export interface SeoSettings {
 export interface EditorState {
     code: string;
     history: string[];
+    redoStack: string[];
     pendingCode: string | null;
     isDefault: boolean;
 }
@@ -79,6 +80,7 @@ export interface AppNavigation {
 export interface EditorActions {
     setCode: (code: string) => void;
     undo: () => boolean;
+    redo: () => boolean;
     applyPendingCode: () => void;
     rejectPendingCode: () => void;
     reset: () => void;
@@ -87,7 +89,6 @@ export interface EditorActions {
     // Internal actions exposed for advanced usage
     setCodeLive: (code: string) => void;
     setPendingCode: (code: string | null) => void;
-    pushToHistory: () => void;
 }
 
 export interface ChatActions {

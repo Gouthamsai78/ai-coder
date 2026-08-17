@@ -339,7 +339,7 @@ const useShaderBackground = () => {
     const pointersRef = useRef<PointerHandler | null>(null);
     const [supported, setSupported] = useState(() => {
         const testCanvas = document.createElement('canvas');
-        return typeof testCanvas.getContext('webgl2') === 'function';
+        return !!testCanvas.getContext('webgl2');
     });
 
     useEffect(() => {

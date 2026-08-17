@@ -6,8 +6,19 @@ export function formatApiError(error: unknown): string {
     const message = error instanceof Error ? error.message : String(error);
     const lowerMessage = message.toLowerCase();
 
-    // Authentication errors
-    if (message.includes('401') || lowerMessage.includes('unauthorized') || lowerMessage.includes('invalid api key')) {
+    // Authentication errors.
+    // NOTE: Google's SDK embeds the model name in the request URL
+    // (v1beta/models/<model>:generateContent), so ANY 400 from Google
+    // contains the word "model". We must therefore detect API-key problems
+    // and precise "model not found" phrasings BEFORE the generic 400 check.
+    if (
+        message.includes('401') ||
+        lowerMessage.includes('unauthorized') ||
+        lowerMessage.includes('invalid api key') ||
+        lowerMessage.includes('api key not valid') ||
+        lowerMessage.includes('api key not found') ||
+        lowerMessage.includes('api key is not valid')
+    ) {
         return 'Invalid API key. Please check your settings and try again.';
     }
 
@@ -16,17 +27,22 @@ export function formatApiError(error: unknown): string {
         return 'Rate limit exceeded. Please wait a moment and retry, or try disabling Web Search in Settings.';
     }
 
-    // Bad request / invalid input
-    if (message.includes('400') || lowerMessage.includes('bad request')) {
-        if (lowerMessage.includes('model')) {
-            return 'Invalid model selected. Please choose a different model in Settings.';
-        }
-        return 'Invalid request format. Please try again with a different prompt.';
+    // Model not found / not supported — match the ACTUAL API phrasing, not
+    // just the word "model" (which appears in every Google error URL).
+    if (
+        lowerMessage.includes('model not found') ||
+        lowerMessage.includes('invalid model') ||
+        lowerMessage.includes('is not found') ||
+        lowerMessage.includes('is not supported') ||
+        lowerMessage.includes('not supported for generatecontent') ||
+        lowerMessage.includes('does not exist')
+    ) {
+        return 'Model not available. Please select a different model in Settings.';
     }
 
-    // Model not found
-    if (lowerMessage.includes('model not found') || lowerMessage.includes('invalid model') || lowerMessage.includes('does not exist')) {
-        return 'Model not available. Please select a different model in Settings.';
+    // Bad request / invalid input (no "model not found" phrasing involved)
+    if (message.includes('400') || lowerMessage.includes('bad request')) {
+        return 'Invalid request format. Please try again with a different prompt.';
     }
 
     // Content filtering

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Download, Home, Plus, RefreshCw, Copy, Check, Rocket, MessageSquare, Play, Code2 } from 'lucide-react';
+import { Settings, Download, Home, Plus, RefreshCw, Copy, Check, Rocket, MessageSquare, Play, Code2, Undo2, Redo2 } from 'lucide-react';
 import { analytics } from './utils/analytics';
 
 // Components
@@ -142,15 +142,25 @@ function AppContent() {
             </button>
           )}
 
-          {/* Undo Button */}
+          {/* Undo / Redo Buttons */}
           {editor.history.length > 0 && (
             <button
               onClick={editor.undo}
               className="btn-ghost flex items-center gap-2 px-3 py-2 text-sm"
-              title="Undo last AI change"
+              title="Undo last change"
             >
-              <RefreshCw className="h-4 w-4 rotate-180" />
+              <Undo2 className="h-4 w-4" />
               <span className="hidden sm:inline">Undo</span>
+            </button>
+          )}
+          {editor.redoStack.length > 0 && (
+            <button
+              onClick={editor.redo}
+              className="btn-ghost flex items-center gap-2 px-3 py-2 text-sm"
+              title="Redo last change"
+            >
+              <Redo2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Redo</span>
             </button>
           )}
 
@@ -235,6 +245,7 @@ function AppContent() {
             messages={chat.messages}
             onSendMessage={chat.sendMessage}
             onStopGeneration={chat.stopGeneration}
+            onRetry={chat.retry}
             isLoading={chat.isLoading}
             hasApiKey={apiSettings.hasApiKey}
             provider={apiSettings.settings.provider}

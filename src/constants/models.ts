@@ -68,5 +68,7 @@ export const AI_MODELS: Record<ApiProvider, ModelOption[]> = {
 
 export const DEFAULT_PROVIDER: ApiProvider = 'google';
 
+export const GOOGLE_FALLBACK_MODEL = 'gemini-3.6-flash';
+
 export const getDefaultModel = (provider: ApiProvider): string =>
     AI_MODELS[provider][0].id;

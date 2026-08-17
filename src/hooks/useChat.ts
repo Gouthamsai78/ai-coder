@@ -214,7 +214,7 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
                 // Remove loading message
                 const errorMessages: Message[] = [
                     ...messagesRef.current.slice(0, -1),
-                    { role: 'assistant', content: `❌ Error: ${friendlyError}\n\nClick "Retry" to try again.` }
+                    { role: 'assistant', content: `❌ Error: ${friendlyError}` }
                 ];
                 setMessages(errorMessages);
                 persistMessages(errorMessages);

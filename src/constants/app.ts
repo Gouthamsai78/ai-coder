@@ -5,6 +5,7 @@ export const APP_CONFIG = {
     NAME: 'AI Coder',
     AUTHOR: 'Goutham Sai',
     CODE_HISTORY_LIMIT: 5,
+    EDIT_BURST_MS: 1000,
     TOAST_DURATION_MS: 3000,
     COPY_FEEDBACK_DURATION_MS: 2000,
 } as const;

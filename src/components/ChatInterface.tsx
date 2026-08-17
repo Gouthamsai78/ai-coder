@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Copy, Check, Paperclip, X, ChevronDown, ExternalLink, Square } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Copy, Check, Paperclip, X, ChevronDown, ExternalLink, Square, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
 import type { FileAttachment, Message, ApiProvider } from '../types';
 import { processFile, isFileSupported, formatFileSize, getFileIcon } from '../services/fileProcessor';
@@ -11,6 +11,7 @@ interface ChatInterfaceProps {
     messages: Message[];
     onSendMessage: (message: string, attachments?: FileAttachment[]) => void;
     onStopGeneration?: () => void;
+    onRetry?: () => void;
     isLoading: boolean;
     hasApiKey: boolean;
     provider: ApiProvider;
@@ -20,7 +21,7 @@ interface ChatInterfaceProps {
     onDismissFeedback: () => void;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, onStopGeneration, isLoading, hasApiKey, provider, onSetProvider, onSetApiKey, showFeedback, onDismissFeedback }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, onStopGeneration, onRetry, isLoading, hasApiKey, provider, onSetProvider, onSetApiKey, showFeedback, onDismissFeedback }) => {
     const [input, setInput] = useState('');
     const [copiedId, setCopiedId] = useState<number | null>(null);
     const [expandedSearch, setExpandedSearch] = useState<number | null>(null);
@@ -62,7 +63,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if ((input.trim() || attachments.length > 0) && !isLoading) {
+        if ((input.trim() || attachments.length > 0) && !isLoading && hasApiKey) {
             onSendMessage(input.trim(), attachments.length > 0 ? attachments : undefined);
             setInput('');
             setAttachments([]);
@@ -80,6 +81,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
     };
 
     const handlePromptClick = (prompt: string) => {
+        if (!hasApiKey) return;
         onSendMessage(prompt);
     };
 
@@ -322,6 +324,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
                             )}>
                                 {msg.content}
 
+                                {/* Retry button attached to error messages */}
+                                {msg.role === 'assistant' && msg.content.startsWith('❌ Error:') && onRetry && (
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <button
+                                            onClick={onRetry}
+                                            disabled={isLoading}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[hsl(var(--primary))] text-white text-xs font-medium hover:opacity-90 disabled:opacity-50 transition-all"
+                                        >
+                                            <RefreshCw className="h-3.5 w-3.5" />
+                                            Retry
+                                        </button>
+                                        <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+                                            Retry last message
+                                        </span>
+                                    </div>
+                                )}
+
                                 {/* Search Results Dropdown */}
                                 {msg.role === 'assistant' && msg.searchData && msg.searchData.results.length > 0 && (
                                     <div className="mt-2 border-t border-[hsl(var(--border)/.5)] pt-2">
@@ -475,8 +494,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMessage, 
                         ) : (
                             <button
                                 type="submit"
-                                disabled={!input.trim() && attachments.length === 0}
+                                disabled={(!input.trim() && attachments.length === 0) || !hasApiKey}
                                 className="p-2 rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/.1)] disabled:opacity-50 disabled:hover:bg-transparent transition-all"
+                                title={hasApiKey ? 'Send message' : 'Add an API key in Settings to send messages'}
                             >
                                 <Send className="h-4 w-4" />
                             </button>

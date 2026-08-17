@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useLocalStorageString } from './useLocalStorage';
 import { STORAGE_KEYS } from '../constants/storage';
 import { DEFAULT_PROVIDER, getDefaultModel } from '../constants/models';
@@ -35,7 +35,7 @@ export function useApiSettings() {
         DEFAULT_PROVIDER
     );
 
-    const [apiKey, setApiKey] = useLocalStorageString(
+    const [apiKey, setApiKeyRaw] = useLocalStorageString(
         STORAGE_KEYS.API_KEY,
         ''
     );
@@ -60,13 +60,6 @@ export function useApiSettings() {
         JSON.stringify(DEFAULT_SEO)
     );
 
-    // Migrate users from old default model to new default
-    useEffect(() => {
-        if (provider === 'google' && model === 'gemini-3.5-flash') {
-            setModel('gemini-3.7-flash');
-        }
-    }, [provider, model, setModel]);
-
     const setWebSearchEnabled = useCallback((enabled: boolean) => {
         setWebSearchRaw(enabled ? 'true' : 'false');
     }, [setWebSearchRaw]);
@@ -81,9 +74,20 @@ export function useApiSettings() {
         setModel(getDefaultModel(newProvider));
     }, [setProviderRaw, setModel]);
 
+    // API keys are copied from elsewhere; paste often drags in whitespace
+    // (spaces, newlines) that makes Google reject the key with
+    // "API key not valid" (API_KEY_INVALID). Normalize at the source so every
+    // entry path (Settings modal, inline field) stores a clean key. Also
+    // normalize on read so an already-dirty stored key heals without re-pasting.
+    const setApiKey = useCallback((value: string) => {
+        setApiKeyRaw(value.replace(/\s+/g, ''));
+    }, [setApiKeyRaw]);
+
+    const cleanApiKey = apiKey.replace(/\s+/g, '');
+
     const settings: ApiSettings = {
         provider: provider as ApiProvider,
-        apiKey,
+        apiKey: cleanApiKey,
         model,
         githubToken,
         webSearchEnabled: webSearchRaw === 'true',
@@ -100,6 +104,6 @@ export function useApiSettings() {
         setGithubToken,
         setWebSearchEnabled,
         setSeoSettings,
-        hasApiKey: apiKey.length > 0,
+        hasApiKey: cleanApiKey.length > 0,
     };
 }
