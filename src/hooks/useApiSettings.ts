@@ -63,7 +63,7 @@ export function useApiSettings() {
     // Migrate users from old default model to new default
     useEffect(() => {
         if (provider === 'google' && model === 'gemini-3.5-flash') {
-            setModel('gemini-3.6-flash');
+            setModel('gemini-3.7-flash');
         }
     }, [provider, model, setModel]);
 
