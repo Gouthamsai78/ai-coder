@@ -10,4 +10,12 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // NOTE: `npm run dev` serves the frontend only. The `/api/site` endpoint
+  // (deploy + view) is a Vercel serverless function backed by Supabase. To
+  // test it locally, run `npx vercel dev` (starts Vite + API together) instead
+  // of adding a blind proxy here. If you do run a local API separately, point
+  // it at the port below:
+  // server: {
+  //   proxy: { '/api': 'http://localhost:3000' },
+  // },
 })

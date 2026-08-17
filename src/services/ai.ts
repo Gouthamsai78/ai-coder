@@ -206,8 +206,25 @@ const stripOuterCodeFence = (content: string): string => {
     if (fenceStart.test(out)) {
         out = out.replace(fenceStart, '');
         out = out.replace(/\n?```\s*$/, '');
+        return out.trim();
     }
-    return out.trim();
+
+    // Intro/outro text around a single fenced block (e.g.
+    // "Here is the file:\n```html\n...\n```"). Only handled when there are
+    // EXACTLY two bare fence lines, so legit code containing backticks or
+    // <pre> samples is never touched.
+    const lines = out.split('\n');
+    const fenceIdx: number[] = [];
+    for (let i = 0; i < lines.length; i++) {
+        if (/^```(?:html)?\s*$/i.test(lines[i].trim())) {
+            fenceIdx.push(i);
+        }
+    }
+    if (fenceIdx.length === 2) {
+        return lines.slice(fenceIdx[0] + 1, fenceIdx[1]).join('\n').trim();
+    }
+
+    return out;
 };
 
 /**
@@ -218,10 +235,14 @@ const stripOuterCodeFence = (content: string): string => {
  *   =======
  *   [replacement]
  *   >>>>>>> REPLACE
- * Returns the patched code. Throws if a SEARCH block does not match.
+ * Matching is whitespace-tolerant: exact match first, then a line-by-line
+ * match ignoring trailing spaces/tabs per line. Throws a friendly error if a
+ * SEARCH block still does not match.
  */
 const applySearchReplace = (currentCode: string, blocksText: string): string => {
-    const blockRegex = /<{5,}\s*SEARCH\s*\n([\s\S]*?)\n={5,}\s*\n([\s\S]*?)\n>{5,}\s*REPLACE/g;
+    // Capture the trailing newline of each block so the replacement lands on
+    // line boundaries (prevents doubled/merged newlines).
+    const blockRegex = /<{5,}\s*SEARCH\s*\n([\s\S]*?\n)={5,}\s*\n([\s\S]*?\n)>{5,}\s*REPLACE/g;
     let updated = currentCode;
     let match: RegExpExecArray | null;
     let applied = 0;
@@ -230,11 +251,7 @@ const applySearchReplace = (currentCode: string, blocksText: string): string => 
         const search = match[1];
         const replace = match[2];
 
-        if (!updated.includes(search)) {
-            throw new Error('SEARCH block did not match current code — the AI edit could not be applied. Try rephrasing your request.');
-        }
-        // Replace only the first occurrence (blocks are meant to be unique).
-        updated = updated.replace(search, () => replace);
+        updated = replaceFirstMatch(updated, search, replace);
         applied++;
     }
 
@@ -243,6 +260,44 @@ const applySearchReplace = (currentCode: string, blocksText: string): string => 
     }
 
     return updated;
+};
+
+/**
+ * Replace the first occurrence of `search` in `haystack` with `replace`,
+ * falling back to a whitespace-tolerant line-by-line match (ignoring trailing
+ * spaces/tabs on each line) when the exact substring is not found.
+ */
+const replaceFirstMatch = (haystack: string, search: string, replace: string): string => {
+    // 1. Exact substring match — the common case.
+    if (haystack.includes(search)) {
+        return haystack.replace(search, () => replace);
+    }
+
+    // 2. Tolerant match: compare per line, ignoring trailing spaces/tabs.
+    const hLines = haystack.split('\n');
+    const sLines = search.split('\n');
+    const clean = (line: string) => line.replace(/[ \t]+$/, '');
+
+    for (let i = 0; i + sLines.length <= hLines.length; i++) {
+        let matched = true;
+        for (let j = 0; j < sLines.length; j++) {
+            if (clean(hLines[i + j]) !== clean(sLines[j])) {
+                matched = false;
+                break;
+            }
+        }
+        if (matched) {
+            return [
+                ...hLines.slice(0, i),
+                ...replace.split('\n'),
+                ...hLines.slice(i + sLines.length),
+            ].join('\n');
+        }
+    }
+
+    throw new Error(
+        'SEARCH block did not match current code — the AI edit could not be applied. Try rephrasing your request or regenerate as a full rewrite.'
+    );
 };
 
 /**
@@ -262,6 +317,8 @@ const processResponse = (
     if (summaryIdx !== -1) {
         body = fullContent.slice(0, summaryIdx);
         summary = fullContent.slice(summaryIdx + '---SUMMARY---'.length).trim() || summary;
+        // Models sometimes wrap the summary in a markdown fence — strip stray ones.
+        summary = summary.replace(/^```\s*/, '').replace(/```\s*$/, '').trim();
     }
 
     const cleaned = stripOuterCodeFence(body);
@@ -357,6 +414,29 @@ export const generateCodeStream = async (
     const MAX_RETRIES = 3;
     let lastError: unknown;
 
+    // Retryable transient failures: rate limits (429) and server-side spikes
+    // (5xx, "high demand", "temporarily"). Both are common with Gemini and
+    // OpenRouter and usually resolve within seconds.
+    const isTransientError = (message: string): boolean => {
+        const m = message.toLowerCase();
+        return (
+            message.includes('429') ||
+            m.includes('rate limit') ||
+            m.includes('resource_exhausted') ||
+            message.includes('500') ||
+            message.includes('502') ||
+            message.includes('503') ||
+            message.includes('504') ||
+            m.includes('high demand') ||
+            m.includes('overloaded') ||
+            m.includes('temporarily') ||
+            // SDK wraps any mid-stream connection drop as this exact message.
+            // Do NOT match "Request aborted when reading from the stream"
+            // (a user Stop) — hence the leading "error".
+            m.includes('error reading from the stream')
+        );
+    };
+
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
             let result;
@@ -387,12 +467,12 @@ export const generateCodeStream = async (
         } catch (error) {
             lastError = error;
             const message = error instanceof Error ? error.message : String(error);
-            const isRateLimit = message.includes('429') || message.toLowerCase().includes('rate limit') || message.toLowerCase().includes('resource_exhausted');
+            const isRetryable = isTransientError(message);
 
-            if (isRateLimit && attempt < MAX_RETRIES - 1) {
+            if (isRetryable && attempt < MAX_RETRIES - 1) {
                 const delay = Math.pow(2, attempt + 1) * 1000;
-                onStatus?.(`⏳ Rate limited. Retrying in ${delay / 1000}s...`);
-                console.warn(`Rate limited (attempt ${attempt + 1}/${MAX_RETRIES}). Retrying in ${delay / 1000}s...`);
+                onStatus?.(`⏳ Service busy. Retrying in ${delay / 1000}s...`);
+                console.warn(`Transient service error (attempt ${attempt + 1}/${MAX_RETRIES}). Retrying in ${delay / 1000}s...`);
                 onRetry?.();
                 await new Promise(resolve => setTimeout(resolve, delay));
                 continue;

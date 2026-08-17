@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Send, Mail, Loader2, Check, AlertTriangle, MessageCircle } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '../../constants/emailjs';
@@ -71,6 +71,10 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
     const [errorMsg, setErrorMsg] = useState('');
     const [rateLimit, setRateLimit] = useState<RateLimitState | null>(() => getRateLimit());
 
+    // Set when the modal is closed mid-send so a stale async resolution never
+    // updates state after the user has moved on.
+    const cancelledRef = useRef(false);
+
     // Derive rate-limited status from current state
     const isAlreadyRateLimited = rateLimit !== null && rateLimit.count >= RATE_LIMIT_MAX;
 
@@ -101,27 +105,37 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
         try {
             const isConfigured = EMAILJS_CONFIG.serviceId.length > 0 && EMAILJS_CONFIG.publicKey.length > 0;
 
-            if (isConfigured) {
-                await emailjs.send(
-                    EMAILJS_CONFIG.serviceId,
-                    EMAILJS_CONFIG.templateId,
-                    {
-                        from_name: name.trim(),
-                        from_email: email.trim(),
-                        message: message.trim(),
-                        page_url: window.location.href,
-                        timestamp: new Date().toISOString(),
-                        type: 'contact_us',
-                    } as unknown as Record<string, unknown>,
-                    EMAILJS_CONFIG.publicKey
-                );
+            if (!isConfigured) {
+                // Never fake a success — surface the unconfigured state instead.
+                if (!cancelledRef.current) {
+                    setStatus('error');
+                    setErrorMsg('The contact form is not configured yet. Please reach out via the WhatsApp community.');
+                }
+                return;
             }
+
+            await emailjs.send(
+                EMAILJS_CONFIG.serviceId,
+                EMAILJS_CONFIG.templateId,
+                {
+                    from_name: name.trim(),
+                    from_email: email.trim(),
+                    message: message.trim(),
+                    page_url: window.location.href,
+                    timestamp: new Date().toISOString(),
+                    type: 'contact_us',
+                } as unknown as Record<string, unknown>,
+                EMAILJS_CONFIG.publicKey
+            );
+
+            if (cancelledRef.current) return;
 
             incrementRateLimit();
             setRateLimit(getRateLimit());
             setStatus('success');
             analytics.track('contact_sent');
         } catch (err) {
+            if (cancelledRef.current) return;
             setStatus('error');
             setErrorMsg(err instanceof Error ? err.message : 'Failed to send message');
             analytics.track('contact_error', { error: String(err) });
@@ -129,6 +143,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) => {
     }, [name, email, message]);
 
     const handleClose = useCallback(() => {
+        cancelledRef.current = true;
         setName('');
         setEmail('');
         setMessage('');

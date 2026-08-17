@@ -26,22 +26,27 @@ const FeedbackPrompt: React.FC<FeedbackPromptProps> = ({ onDismiss }) => {
         analytics.track('feedback_submitted');
 
         try {
-            if (isConfigured) {
-                const templateParams: FeedbackTemplateParams = {
-                    from_name: email || 'Anonymous',
-                    from_email: email,
-                    message: message.trim(),
-                    page_url: window.location.href,
-                    timestamp: new Date().toISOString(),
-                };
-
-                await emailjs.send(
-                    EMAILJS_CONFIG.serviceId,
-                    EMAILJS_CONFIG.templateId,
-                    templateParams as unknown as Record<string, unknown>,
-                    EMAILJS_CONFIG.publicKey
-                );
+            if (!isConfigured) {
+                // Never fake a success when EmailJS is unconfigured.
+                setStatus('error');
+                setErrorMsg('Feedback service is not configured yet. Please email us directly.');
+                return;
             }
+
+            const templateParams: FeedbackTemplateParams = {
+                from_name: email || 'Anonymous',
+                from_email: email,
+                message: message.trim(),
+                page_url: window.location.href,
+                timestamp: new Date().toISOString(),
+            };
+
+            await emailjs.send(
+                EMAILJS_CONFIG.serviceId,
+                EMAILJS_CONFIG.templateId,
+                templateParams as unknown as Record<string, unknown>,
+                EMAILJS_CONFIG.publicKey
+            );
 
             setStatus('success');
             analytics.track('feedback_sent');

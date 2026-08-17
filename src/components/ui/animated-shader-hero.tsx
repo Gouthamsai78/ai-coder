@@ -127,8 +127,12 @@ class WebGLRenderer {
     constructor(canvas: HTMLCanvasElement, scale: number) {
         this.canvas = canvas;
         this.scale = scale;
-        this.gl = canvas.getContext('webgl2')!;
-        this.gl.viewport(0, 0, canvas.width * scale, canvas.height * scale);
+        const gl = canvas.getContext('webgl2');
+        if (!gl) {
+            throw new Error('WebGL2 is not supported in this browser.');
+        }
+        this.gl = gl;
+        gl.viewport(0, 0, canvas.width * scale, canvas.height * scale);
         // Ensure defaultShaderSource is available in this scope or imported
         this.shaderSource = defaultShaderSource;
     }
@@ -333,8 +337,10 @@ const useShaderBackground = () => {
     const animationFrameRef = useRef<number>(0);
     const rendererRef = useRef<WebGLRenderer | null>(null);
     const pointersRef = useRef<PointerHandler | null>(null);
-
-
+    const [supported, setSupported] = useState(() => {
+        const testCanvas = document.createElement('canvas');
+        return typeof testCanvas.getContext('webgl2') === 'function';
+    });
 
     useEffect(() => {
         if (!canvasRef.current) return;
@@ -367,16 +373,22 @@ const useShaderBackground = () => {
             animationFrameRef.current = requestAnimationFrame(loop);
         };
 
-        rendererRef.current = new WebGLRenderer(canvas, dpr);
-        pointersRef.current = new PointerHandler(canvas, dpr);
+        try {
+            rendererRef.current = new WebGLRenderer(canvas, dpr);
+            pointersRef.current = new PointerHandler(canvas, dpr);
 
-        rendererRef.current.setup();
-        rendererRef.current.init();
+            rendererRef.current.setup();
+            rendererRef.current.init();
 
-        resize();
+            resize();
 
-        if (rendererRef.current.test(defaultShaderSource) === null) {
-            rendererRef.current.updateShader(defaultShaderSource);
+            if (rendererRef.current.test(defaultShaderSource) === null) {
+                rendererRef.current.updateShader(defaultShaderSource);
+            }
+        } catch (error) {
+            console.error('Shader hero initialization failed, using fallback:', error);
+            setTimeout(() => setSupported(false), 0);
+            return;
         }
 
         loop(0);
@@ -394,7 +406,7 @@ const useShaderBackground = () => {
         };
     }, []);
 
-    return canvasRef;
+    return { canvasRef, supported };
 };
 
 // Enhanced Helper Components
@@ -417,6 +429,7 @@ const MagneticButton: React.FC<{ children: React.ReactNode; className?: string; 
     return (
         <button
             ref={btnRef}
+            type="button"
             onClick={onClick}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
@@ -477,16 +490,21 @@ const Hero: React.FC<HeroProps> = ({
     children,
     className = ""
 }) => {
-    const canvasRef = useShaderBackground();
+    const { canvasRef, supported } = useShaderBackground();
 
     return (
         <div className={`relative w-full min-h-screen bg-black ${className}`}>
-
-
-            <canvas
-                ref={canvasRef}
-                className="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-80"
-            />
+            {supported ? (
+                <canvas
+                    ref={canvasRef}
+                    className="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-80"
+                />
+            ) : (
+                <div
+                    aria-hidden="true"
+                    className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_left,rgba(99,102,241,0.25),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(244,63,94,0.18),transparent_55%),linear-gradient(180deg,#0a0a0f_0%,#050507_100%)]"
+                />
+            )}
 
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pt-6 lg:pt-12 text-white">
                 {trustBadge && (

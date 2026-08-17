@@ -29,11 +29,13 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, gra
             onMouseMove={handleMouseMove}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className="relative group rounded-2xl border border-white/10 bg-white/5 p-6 md:p-8 overflow-hidden transition-all duration-300 hover:bg-white/10 hover:border-white/20"
+            className="relative group rounded-2xl border border-white/10 bg-white/5 p-6 md:p-8 overflow-hidden transition-[background-color,border-color] duration-300 hover:bg-white/10 hover:border-white/20"
             style={{
                 opacity: isInView ? 1 : 0,
                 transform: isInView ? 'scale(1) translateY(0)' : 'scale(0.95) translateY(20px)',
-                transition: `all 0.6s cubic-bezier(0.22, 1, 0.36, 1) ${index * 0.1}s`,
+                // Stagger delay applies ONLY to the entrance (opacity/transform);
+                // hover color transitions stay instant (no index-based lag).
+                transition: `opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1) ${index * 0.1}s, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1) ${index * 0.1}s`,
             }}
         >
             {/* Spotlight effect */}

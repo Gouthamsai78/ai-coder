@@ -79,7 +79,7 @@ const Footer: React.FC = () => {
                                     <MagneticButton
                                         onClick={() => {
                                             analytics.track('feedback_widget_opened', { source: 'footer' });
-                                            document.querySelector<HTMLButtonElement>('[aria-label="Give feedback"]')?.click();
+                                            window.dispatchEvent(new CustomEvent('aicoder:open-feedback'));
                                         }}
                                         className="hover:text-orange-400 transition-colors inline-flex items-center gap-2"
                                     >

@@ -34,6 +34,14 @@ const FeedbackWidget: React.FC = () => {
         analytics.track('feedback_proceed_confirmed');
     }, []);
 
+    // Open the widget from anywhere (e.g. the Footer's "Roast Us" link) via a
+    // custom event — avoids fragile DOM-selector coupling.
+    useEffect(() => {
+        const openFromEvent = () => handleOpen();
+        window.addEventListener('aicoder:open-feedback', openFromEvent);
+        return () => window.removeEventListener('aicoder:open-feedback', openFromEvent);
+    }, [handleOpen]);
+
     // Show subtle tooltip after 5s delay on first visit
     useEffect(() => {
         if (hasShownTooltip) return;

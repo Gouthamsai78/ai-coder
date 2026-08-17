@@ -85,6 +85,7 @@ export interface EditorActions {
     download: () => void;
     copy: () => Promise<boolean>;
     // Internal actions exposed for advanced usage
+    setCodeLive: (code: string) => void;
     setPendingCode: (code: string | null) => void;
     pushToHistory: () => void;
 }

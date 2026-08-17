@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useLocalStorageString } from './useLocalStorage';
+import { storage } from '../utils/storage';
 import { STORAGE_KEYS } from '../constants/storage';
 import { DEFAULT_CODE, APP_CONFIG } from '../constants/app';
 import { downloadAsHtml } from '../utils/download';
@@ -13,9 +13,11 @@ import type { EditorState, EditorActions } from '../types';
 export function useCodeEditor(): EditorState & EditorActions {
     const { showToast } = useToast();
 
-    const [code, setCodeRaw] = useLocalStorageString(
-        STORAGE_KEYS.SAVED_CODE,
-        DEFAULT_CODE
+    // Plain state + explicit persistence so AI streaming can update the editor
+    // live WITHOUT writing the full accumulated code to localStorage on every
+    // chunk (that path writes MBs repeatedly and can blow the quota).
+    const [code, setCodeState] = useState<string>(() =>
+        storage.getString(STORAGE_KEYS.SAVED_CODE, DEFAULT_CODE)
     );
 
     const [history, setHistory] = useState<string[]>([]);
@@ -30,26 +32,38 @@ export function useCodeEditor(): EditorState & EditorActions {
         }
     }, [code, isDefault]);
 
+    // Persisting setter — used by manual edits, undo, apply, reset.
+    const setCode = useCallback((next: string) => {
+        setCodeState(next);
+        storage.setString(STORAGE_KEYS.SAVED_CODE, next);
+    }, []);
+
+    // Live setter — used during AI streaming. Updates the editor/state only;
+    // the final code is persisted once via setCode when generation ends.
+    const setCodeLive = useCallback((next: string) => {
+        setCodeState(next);
+    }, []);
+
     const undo = useCallback((): boolean => {
         if (history.length === 0) return false;
 
         const previousCode = history[history.length - 1];
         setHistory(prev => prev.slice(0, -1));
-        setCodeRaw(previousCode);
+        setCode(previousCode);
         showToast('Restored previous code', 'info');
         analytics.track('undo');
         return true;
-    }, [history, setCodeRaw, showToast]);
+    }, [history, setCode, showToast]);
 
     const applyPendingCode = useCallback(() => {
         if (pendingCode) {
             pushToHistory();
-            setCodeRaw(pendingCode);
+            setCode(pendingCode);
             setPendingCode(null);
             showToast('Changes applied!', 'success');
             analytics.track('diff_applied');
         }
-    }, [pendingCode, pushToHistory, setCodeRaw, showToast]);
+    }, [pendingCode, pushToHistory, setCode, showToast]);
 
     const rejectPendingCode = useCallback(() => {
         setPendingCode(null);
@@ -58,10 +72,10 @@ export function useCodeEditor(): EditorState & EditorActions {
     }, [showToast]);
 
     const reset = useCallback(() => {
-        setCodeRaw(DEFAULT_CODE);
+        setCode(DEFAULT_CODE);
         setHistory([]);
         setPendingCode(null);
-    }, [setCodeRaw]);
+    }, [setCode]);
 
     const download = useCallback(() => {
         downloadAsHtml(code);
@@ -88,7 +102,7 @@ export function useCodeEditor(): EditorState & EditorActions {
         pendingCode,
         isDefault,
         // Actions
-        setCode: setCodeRaw, // Direct set without history
+        setCode,
         undo,
         applyPendingCode,
         rejectPendingCode,
@@ -96,6 +110,7 @@ export function useCodeEditor(): EditorState & EditorActions {
         download,
         copy,
         // Internal (for AI streaming)
+        setCodeLive,
         setPendingCode,
         pushToHistory,
     };

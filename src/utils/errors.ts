@@ -72,6 +72,11 @@ export function formatApiError(error: unknown): string {
         return 'Failed to process AI response. Please try again with a simpler prompt.';
     }
 
+    // SEARCH/REPLACE edit failures (MODE 2 diff-based edits)
+    if (lowerMessage.includes('search block') || lowerMessage.includes('search/replace') || lowerMessage.includes('no valid search')) {
+        return 'The AI edit did not match the current code. Please try again or rephrase your request.';
+    }
+
     // Streaming errors — last resort, log real error for debugging
     if (lowerMessage.includes('stream') || lowerMessage.includes('abort')) {
         console.error('Stream/abort error (raw):', error);

@@ -85,21 +85,16 @@ const SocialProofSection: React.FC = () => {
                     <AnimatedCounter value={4} label="Deploy Targets" />
                 </div>
 
-                {/* Marquee */}
+                {/* Marquee — single seamless strip (content duplicated once,
+                    animating -50% loops cleanly). Avoids the overlapping
+                    two-strip layout that rendered logos on top of each other. */}
                 <p className="text-center text-gray-500 text-xs font-medium tracking-wider uppercase mb-6">
                     Powered by
                 </p>
                 <div className="relative flex overflow-hidden" aria-hidden="true">
                     <div className="animate-marquee whitespace-nowrap flex items-center gap-10 md:gap-20">
-                        {[...providers, ...providers, ...providers].map((provider, i) => (
+                        {[...providers, ...providers].map((provider, i) => (
                             <span key={`${provider.name}-${i}`} className="inline-flex items-center opacity-30 hover:opacity-60 transition-opacity">
-                                <provider.Logo />
-                            </span>
-                        ))}
-                    </div>
-                    <div className="absolute top-0 animate-marquee2 whitespace-nowrap flex items-center gap-10 md:gap-20">
-                        {[...providers, ...providers, ...providers].map((provider, i) => (
-                            <span key={`dup-${provider.name}-${i}`} className="inline-flex items-center opacity-30 hover:opacity-60 transition-opacity">
                                 <provider.Logo />
                             </span>
                         ))}

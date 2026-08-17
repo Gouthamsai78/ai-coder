@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { ExternalLink, Monitor, MessageSquare, Code2, Play } from 'lucide-react';
 
 interface PreviewProps {
@@ -7,7 +7,27 @@ interface PreviewProps {
     onTabChange?: (tab: 'chat' | 'code' | 'preview') => void;
 }
 
+// Throttle window for iframe reloads during AI streaming. Each reload wipes
+// the iframe's runtime state, so we only swap ~every 400ms while chunks flow,
+// plus a guaranteed trailing flush when streaming ends.
+const IFRAME_THROTTLE_MS = 400;
+
 const Preview: React.FC<PreviewProps> = ({ code, activeTab, onTabChange }) => {
+    // Displayed code is throttled; the editor/Monaco still streams live.
+    const [displayedCode, setDisplayedCode] = useState(code);
+    const lastSwapRef = useRef(0);
+
+    useEffect(() => {
+        const now = Date.now();
+        const elapsed = now - lastSwapRef.current;
+        const delay = elapsed >= IFRAME_THROTTLE_MS ? 0 : IFRAME_THROTTLE_MS - elapsed;
+        const timeout = setTimeout(() => {
+            lastSwapRef.current = Date.now();
+            setDisplayedCode(code);
+        }, delay);
+        return () => clearTimeout(timeout);
+    }, [code]);
+
     const handleOpenInNewTab = () => {
         const blob = new Blob([code], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
@@ -18,7 +38,7 @@ const Preview: React.FC<PreviewProps> = ({ code, activeTab, onTabChange }) => {
     // Create a safe srcdoc with proper HTML structure
     const safeSrcDoc = useMemo(() => {
         // If code is empty or just whitespace, show a placeholder
-        if (!code || !code.trim()) {
+        if (!displayedCode || !displayedCode.trim()) {
             return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Preview</title></head>
@@ -29,8 +49,8 @@ const Preview: React.FC<PreviewProps> = ({ code, activeTab, onTabChange }) => {
         }
 
         // Return the code as-is (should be valid HTML)
-        return code;
-    }, [code]);
+        return displayedCode;
+    }, [displayedCode]);
 
     return (
         <div className="h-full w-full overflow-hidden rounded-[var(--radius)] border border-[hsl(var(--border))] bg-white">

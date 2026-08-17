@@ -22,11 +22,14 @@ import { useAppNavigation } from './hooks/useAppNavigation';
 
 /**
  * Reserved single-segment paths that are NOT deployed-site slugs.
- * Mirrors RESERVED_SLUGS in api/site.ts plus known client/static routes.
+ * Mirrors RESERVED_SLUGS in api/site.ts exactly — keep both in sync.
+ * Note: the app has no router (navigation is state-based), so only these
+ * reserved paths are blocked. Deployed sites at any other valid slug
+ * (e.g. /about, /pricing) must render SiteViewer, not the landing page.
  */
 const RESERVED_ROUTES = new Set([
     'api', 'admin', 'settings', 'login', 'signup', 'deploy', 'static', 'assets',
-    'about', 'pricing', 'dashboard', 'index.html', 'robots.txt', 'sitemap.xml', 'favicon.ico',
+    'index.html', 'robots.txt', 'sitemap.xml', 'favicon.ico',
 ]);
 
 /**
@@ -57,6 +60,7 @@ function AppContent() {
     code: editor.code,
     isDefaultCode: editor.isDefault,
     setCode: editor.setCode,
+    setStreamingCode: editor.setCodeLive,
     setPendingCode: editor.setPendingCode,
     onGenerationSuccess: () => setShowFeedback(true),
   });

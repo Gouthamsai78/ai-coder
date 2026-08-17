@@ -2,7 +2,7 @@
 
 ## Overview
 
-AI Coder deploys to `aicoderbygoutham.vercel.app` with one click. Users generate HTML with AI, then deploy it to a shareable URL with no account or configuration required.
+AI Coder deploys to `aicoderbygoutham.vercel.app` with one click. Users generate HTML with AI, then deploy it to a shareable URL with no account or configuration required. Deployed sites are stored in **Supabase** (Postgres) and served by a single Vercel serverless function.
 
 ## Deployment Options
 
@@ -14,7 +14,7 @@ Click "Deploy to AI Coder" in the DeployModal → instant shareable URL.
 - No account needed
 - SEO meta tags embedded in HTML
 - Shareable via link
-- Limited lifetime (in-memory storage)
+- Persistent storage (Supabase), not in-memory
 
 ### 2. CodePen (Instant Preview)
 **URL:** `https://codepen.io/pen/define?data=...`
@@ -27,79 +27,79 @@ Opens CodePen with the generated HTML pre-filled. Good for quick sharing.
 Creates a public GitHub Gist with the HTML file. Requires a GitHub token.
 
 ### 4. Open in New Tab (Local)
-**URL:** `blob:http://localhost:5173/...`
+**URL:** `blob:...`
 
 Opens the HTML in a new browser tab. User can save manually.
 
-## Serverless API Endpoints
+## Serverless API
 
-All endpoints are in the `api/` directory at the project root. Vercel auto-detects them alongside the Vite SPA.
+A single function lives in `api/site.ts`. Vercel auto-detects it alongside the Vite SPA.
 
-### POST /api/deploy
-
-Stores generated HTML and returns a shareable URL.
+### POST /api/site — Deploy or update a site
 
 **Request:**
 ```json
 {
   "html": "<!DOCTYPE html>...",
   "title": "My Site",
-  "description": "Optional description",
-  "sitemap_xml": "<optional sitemap>",
-  "robots_txt": "<optional robots.txt>"
+  "customSlug": "my-site",
+  "oldSlug": "my-old-site"
 }
 ```
+
+- `customSlug` is optional (3-30 lowercase letters/numbers/hyphens, not reserved).
+- `oldSlug` is required only to update/re-rename an existing slug.
 
 **Response (200):**
 ```json
 {
-  "id": "abc123xy",
-  "slug": "abc123xy",
-  "url": "https://aicoderbygoutham.vercel.app/abc123xy",
+  "id": "my-site",
+  "slug": "my-site",
+  "url": "https://aicoderbygoutham.vercel.app/my-site",
   "created_at": "2026-06-18T12:00:00.000Z"
 }
 ```
 
 **Errors:**
-- `400` — HTML missing or too large (>5MB)
-- `405` — Wrong HTTP method
-- `500` — Server error
+- `400` — HTML missing or >5MB, invalid slug
+- `401` — Missing/invalid `x-deploy-token` (only if `DEPLOY_TOKEN` env is set)
+- `409` — Slug already taken
+- `500` — Storage not configured or server error
 
-### GET /api/view/{slug}
+### GET /api/site?id={slug} — Serve a deployed site
 
-Returns the raw HTML for a deployed site.
-
-**Response:** `Content-Type: text/html; charset=utf-8`
+Returns the raw HTML with `Content-Type: text/html; charset=utf-8`.
 
 **Headers:**
 - `X-Robots-Tag: index, follow` — tells crawlers to index the page
-- `Cache-Control: public, max-age=300` — 5-minute cache
+- `Cache-Control: public, max-age=300, s-maxage=300` — 5-minute cache
+- `Content-Security-Policy: sandbox allow-scripts allow-forms allow-popups allow-modals` — served HTML cannot touch the app's origin (which holds API keys in localStorage)
+- `X-Site-Title` — optional sanitized site title
 
-### GET /api/seo/{slug}/sitemap.xml
+**Errors:**
+- `400` — Missing `id`
+- `404` — Site not found
+- `500` — Storage not configured or server error
 
-Returns sitemap.xml for the deployed site. Falls back to a generated default.
+## Storage — Supabase
 
-**Response:** `Content-Type: application/xml; charset=utf-8`
+Deployed sites live in the `deployed_sites` table (columns: `slug`, `html`, `title`, `updated_at`). Deploys insert/update rows; GET fetches by `slug`.
 
-### GET /api/seo/{slug}/robots.txt
+**Required env vars (Vercel project settings):**
+- `SUPABASE_URL` — Supabase project URL
+- `SUPABASE_ANON_KEY` — Supabase anon key
 
-Returns robots.txt for the deployed site. Falls back to a generated default.
+**Optional env var:**
+- `DEPLOY_TOKEN` — if set, POST requires `x-deploy-token` header to match (write protection). The client sends this from `VITE_DEPLOY_TOKEN` if present.
 
-**Response:** `Content-Type: text/plain; charset=utf-8`
+**Client-side env vars (build time):**
+- `VITE_DEPLOY_TOKEN` — optional; sent as `x-deploy-token` on deploys
+- `VITE_TAVILY_API_KEY` — enables web search during generation
+- `VITE_EMAILJS_SERVICE_ID` / `VITE_EMAILJS_TEMPLATE_ID` / `VITE_EMAILJS_PUBLIC_KEY` — override EmailJS contact/feedback config
 
-## Storage
+## Local Development
 
-Currently uses in-memory `Map<string, SiteData>` on the Vercel serverless function.
-
-**Limitations:**
-- Data is lost on cold start (each instance has its own memory)
-- Data is lost when the function is redeployed
-- Each Vercel instance has separate memory (requests may not find data stored by another instance)
-
-**Production upgrade path:** Replace `Map` with:
-- **Vercel KV** (Redis) — `@vercel/kv` package, same interface
-- **Upstash Redis** — Serverless Redis, free tier available
-- **Supabase** — PostgreSQL, free tier
+`npm run dev` serves the frontend only. To test the deploy/view API locally, run `npx vercel dev` (starts Vite + the `api/site.ts` function together). Set the env vars above in your local environment first.
 
 ## Vercel Configuration
 
