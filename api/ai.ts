@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI, type Part } from '@google/generative-ai';
-import { SYSTEM_PROMPT } from '../src/services/ai/system-prompt';
+import { SYSTEM_PROMPT } from '../src/services/ai/system-prompt.js';
 import type { ApiProvider, FileAttachment } from '../src/types';
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
