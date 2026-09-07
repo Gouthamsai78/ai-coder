@@ -11,16 +11,70 @@
  * - Automatic response processing and summary extraction
  */
 
-import OpenAI from 'openai';
-import { GoogleGenerativeAI, type Part } from '@google/generative-ai';
 import type { ApiProvider, FileAttachment, SeoSettings } from '../types';
 import { GOOGLE_FALLBACK_MODEL } from '../constants/models';
-import { SYSTEM_PROMPT } from './ai/system-prompt';
 import { shouldSearch, searchWeb } from './search';
 
 // ============================================
 // Provider Implementations
 // ============================================
+
+const streamFromServer = async (
+    apiKey: string,
+    model: string,
+    provider: ApiProvider,
+    messages: { role: 'user' | 'assistant'; content: string }[],
+    currentCode: string,
+    onChunk: (chunk: string) => void,
+    attachments?: FileAttachment[],
+    searchContext?: string,
+    signal?: AbortSignal
+): Promise<{ code: string; summary: string }> => {
+    const response = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey, model, provider, messages, currentCode, attachments, searchContext }),
+        signal,
+    });
+
+    if (!response.ok) {
+        const data: unknown = await response.json().catch(() => null);
+        const message = typeof data === 'object' && data !== null && 'error' in data && typeof data.error === 'string'
+            ? data.error
+            : `AI request failed (${response.status})`;
+        throw new Error(message);
+    }
+
+    if (!response.body) throw new Error('AI response stream was unavailable');
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullContent = '';
+
+    const consumeEvent = (line: string): void => {
+        if (!line.startsWith('data: ')) return;
+        const parsed: unknown = JSON.parse(line.slice(6));
+        if (typeof parsed !== 'object' || parsed === null || !('type' in parsed)) return;
+        const event = parsed as { type?: unknown; text?: unknown; message?: unknown };
+        if (event.type === 'chunk' && typeof event.text === 'string') {
+            fullContent += event.text;
+            onChunk(event.text);
+        } else if (event.type === 'error' && typeof event.message === 'string') {
+            throw new Error(event.message);
+        }
+    };
+
+    while (true) {
+        const { value, done } = await reader.read();
+        buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) consumeEvent(line.trimEnd());
+        if (done) break;
+    }
+    if (buffer.trim()) consumeEvent(buffer.trim());
+    return processResponse(fullContent, currentCode);
+};
 
 /**
  * Generate code using Google Generative AI (Gemini)
@@ -36,95 +90,7 @@ const generateWithGoogleAI = async (
     searchContext?: string,
     signal?: AbortSignal
 ): Promise<{ code: string; summary: string }> => {
-    // Initialize the Google Generative AI client
-    const genAI = new GoogleGenerativeAI(apiKey);
-
-    // Extract model name (remove provider prefix if present)
-    const modelName = model.includes('/')
-        ? model.split('/').pop()?.replace(':free', '') || model
-        : model;
-
-    // Configure model with system instruction
-    const generativeModel = genAI.getGenerativeModel({
-        model: modelName,
-        systemInstruction: SYSTEM_PROMPT
-    });
-
-    // Build the chat history
-    const history = messages.map(m => ({
-        role: m.role === 'assistant' ? 'model' as const : 'user' as const,
-        parts: [{ text: m.content }]
-    }));
-
-    // Create the chat session
-    const chat = generativeModel.startChat({
-        history: history,
-    });
-
-    // Build prompt parts (text + attachments)
-    const promptParts: Part[] = [];
-
-    // Add text prompt (+ web search context if available)
-    promptParts.push({
-        text: `
-Current Code:
-${currentCode}
-${searchContext || ''}
-Based on the conversation above, generate the COMPLETE updated HTML file. Always output the full file.
-`
-    });
-
-    // Add attachments if provided
-    if (attachments && attachments.length > 0) {
-        for (const attachment of attachments) {
-            if (attachment.type === 'image') {
-                // Extract base64 content
-                const base64Match = attachment.content.match(/^data:([^;]+);base64,(.+)$/);
-                if (base64Match) {
-                    promptParts.push({
-                        inlineData: {
-                            mimeType: attachment.mimeType,
-                            data: base64Match[2]
-                        }
-                    });
-                }
-            } else if (attachment.type === 'text') {
-                promptParts.push({
-                    text: `\n\n--- Attached File: ${attachment.name} ---\n${attachment.content}\n--- End of File ---\n`
-                });
-            } else if (attachment.type === 'pdf') {
-                // Google AI supports PDF as inline data
-                const base64Match = attachment.content.match(/^data:([^;]+);base64,(.+)$/);
-                if (base64Match) {
-                    promptParts.push({
-                        inlineData: {
-                            mimeType: attachment.mimeType,
-                            data: base64Match[2]
-                        }
-                    });
-                }
-            }
-        }
-    }
-
-    // Stream the response
-    const result = await chat.sendMessageStream(promptParts, { signal });
-    let fullContent = '';
-
-    for await (const chunk of result.stream) {
-        if (signal?.aborted) break;
-        const chunkText = chunk.text();
-        if (chunkText) {
-            fullContent += chunkText;
-            onChunk(chunkText);
-        }
-    }
-
-    if (signal?.aborted) {
-        throw new DOMException('Aborted', 'AbortError');
-    }
-
-    return processResponse(fullContent, currentCode);
+    return streamFromServer(apiKey, model, 'google', messages, currentCode, onChunk, attachments, searchContext, signal);
 };
 
 /**
@@ -141,55 +107,7 @@ const generateWithOpenRouter = async (
     searchContext?: string,
     signal?: AbortSignal
 ): Promise<{ code: string; summary: string }> => {
-    const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: 'https://openrouter.ai/api/v1',
-        dangerouslyAllowBrowser: true,
-    });
-
-    // Build attachment context (OpenRouter doesn't support multimodal for all models)
-    let attachmentContext = '';
-    if (attachments && attachments.length > 0) {
-        for (const attachment of attachments) {
-            if (attachment.type === 'text') {
-                attachmentContext += `\n\n--- Attached File: ${attachment.name} ---\n${attachment.content}\n--- End of File ---\n`;
-            } else if (attachment.type === 'image') {
-                attachmentContext += `\n\n[Image attached: ${attachment.name}] - Note: Please describe what you want from this image in text.`;
-            } else if (attachment.type === 'pdf') {
-                attachmentContext += `\n\n[PDF attached: ${attachment.name}] - Note: PDF content extraction not available for this provider.`;
-            }
-        }
-    }
-
-    const stream = await openai.chat.completions.create({
-        model: model,
-        messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            ...messages.map(m => ({ role: m.role, content: m.content })),
-            {
-                role: 'user',
-                content: `
-Current Code:
-${currentCode}
-${attachmentContext}${searchContext || ''}
-Based on the conversation above, generate the COMPLETE updated HTML file. Always output the full file.
-`,
-            },
-        ],
-        stream: true,
-    }, { signal });
-
-    let fullContent = '';
-
-    for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || '';
-        if (content) {
-            fullContent += content;
-            onChunk(content);
-        }
-    }
-
-    return processResponse(fullContent, currentCode);
+    return streamFromServer(apiKey, model, 'openrouter', messages, currentCode, onChunk, attachments, searchContext, signal);
 };
 
 // ============================================
@@ -396,7 +314,7 @@ export const generateCodeStream = async (
 
     if (webSearchEnabled && shouldSearch(latestUserMessage)) {
         onStatus?.('🔍 Searching the web...');
-        const searchResult = await searchWeb(latestUserMessage);
+        const searchResult = await searchWeb(latestUserMessage, signal);
         if (searchResult) {
             searchContextStr = searchResult.context;
             searchData = { query: searchResult.query, results: searchResult.results };

@@ -80,6 +80,7 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
 
         // Cancel any in-progress stream
         abortControllerRef.current?.abort();
+        userStoppedRef.current = false;
         const controller = new AbortController();
         abortControllerRef.current = controller;
 
@@ -137,6 +138,12 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
                 controller.signal
             );
 
+            // A request can finish at the same moment another action aborts it.
+            // Never let that stale result update the new project state.
+            if (abortControllerRef.current !== controller || controller.signal.aborted) {
+                return;
+            }
+
             if (isFirstBuild) {
                 setCode(result.code);
                 const finalMessages: Message[] = [...messagesRef.current];
@@ -187,6 +194,7 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
 
             // A newer send superseded this one — stay silent, don't touch shared state.
             if (isAbort && abortControllerRef.current !== controller) {
+                if (userStoppedRef.current) userStoppedRef.current = false;
                 return;
             }
 
@@ -263,6 +271,8 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
     }, [lastPrompt, lastAttachments, isLoading, sendMessage, setMessages, persistMessages, apiSettings.provider]);
 
     const clearMessages = useCallback(() => {
+        abortControllerRef.current?.abort();
+        userStoppedRef.current = false;
         setMessages([]);
         persistMessages([]);
         setLastError(null);
@@ -270,6 +280,8 @@ export function useChat(options: UseChatOptions): ChatState & ChatActions {
     }, [setMessages, persistMessages, showToast]);
 
     const clearAll = useCallback(() => {
+        abortControllerRef.current?.abort();
+        userStoppedRef.current = false;
         setMessages([]);
         persistMessages([]);
         setLastError(null);

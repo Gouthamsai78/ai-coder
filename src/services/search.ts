@@ -50,7 +50,7 @@ export interface SearchWebResult {
 /**
  * Run a Tavily web search. Returns structured results + context, or null on failure.
  */
-export async function searchWeb(query: string): Promise<SearchWebResult | null> {
+export async function searchWeb(query: string, signal?: AbortSignal): Promise<SearchWebResult | null> {
     if (!TAVILY_API_KEY) {
         console.warn('[WebSearch] No Tavily API key configured. Set VITE_TAVILY_API_KEY in your .env file.');
         return null;
@@ -62,6 +62,7 @@ export async function searchWeb(query: string): Promise<SearchWebResult | null> 
             headers: {
                 'Content-Type': 'application/json',
             },
+            signal,
             body: JSON.stringify({
                 api_key: TAVILY_API_KEY,
                 query: `${query} (code examples, documentation)`,
@@ -112,6 +113,9 @@ export async function searchWeb(query: string): Promise<SearchWebResult | null> 
         return { context, query, results: uiResults };
 
     } catch (err) {
+        if (signal?.aborted) {
+            throw new DOMException('Aborted', 'AbortError');
+        }
         console.warn('[WebSearch] Error:', err);
         return null;
     }

@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { randomBytes } from 'crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
 
 // ─── Supabase Client ────────────────────────────────────────────
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -13,6 +13,7 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = supabaseUrl && supabaseKey
     ? createClient(supabaseUrl, supabaseKey)
     : null;
+const deploymentSecret = process.env.DEPLOY_SECRET || '';
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -58,16 +59,24 @@ function setSecurityHeaders(res: VercelResponse) {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 }
 
+function createOwnerToken(slug: string): string {
+    return createHmac('sha256', deploymentSecret).update(slug).digest('base64url');
+}
+
+function hasSiteOwnership(slug: string, token: string): boolean {
+    if (!deploymentSecret || !token) return false;
+    const expected = Buffer.from(createOwnerToken(slug));
+    const provided = Buffer.from(token);
+    return expected.length === provided.length && timingSafeEqual(expected, provided);
+}
+
 // ─── Handler ─────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     setSecurityHeaders(res);
 
     if (req.method === 'OPTIONS') {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-        return res.status(200).end();
+        return res.status(204).end();
     }
 
     // GET /api/site?id=xxx → serve deployed HTML
@@ -123,6 +132,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // POST /api/site → deploy HTML
     if (req.method === 'POST') {
+        if (!deploymentSecret) {
+            return res.status(500).json({ error: 'Deployment ownership is not configured' });
+        }
+
         if (!supabase) {
             return res.status(500).json({ error: 'Storage not configured' });
         }
@@ -138,8 +151,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         try {
             const body = (req.body && typeof req.body === 'object') ? req.body : {};
-            const { html, title, customSlug, oldSlug } = body as {
-                html?: unknown; title?: unknown; customSlug?: unknown; oldSlug?: unknown;
+            const { html, title, customSlug, oldSlug, ownerToken } = body as {
+                html?: unknown; title?: unknown; customSlug?: unknown; oldSlug?: unknown; ownerToken?: unknown;
             };
 
             if (!html || typeof html !== 'string') {
@@ -152,6 +165,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             let slug: string;
             let isUpdate = false;
+
+            if (oldSlug && (typeof oldSlug !== 'string' || typeof ownerToken !== 'string' || !hasSiteOwnership(oldSlug, ownerToken))) {
+                return res.status(401).json({ error: 'Deployment ownership could not be verified. Deploy again.' });
+            }
 
             if (customSlug && typeof customSlug === 'string') {
                 const normalized = customSlug.toLowerCase().trim();
@@ -168,8 +185,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     .limit(1);
 
                 if (existing && existing.length > 0) {
-                    // Slug exists — only allow if this is an update (oldSlug provided)
-                    if (oldSlug && typeof oldSlug === 'string' && oldSlug === normalized) {
+                    // Slug exists — only allow if the caller owns the current slug.
+                    if (oldSlug === normalized && typeof ownerToken === 'string' && hasSiteOwnership(normalized, ownerToken)) {
                         isUpdate = true;
                     } else if (oldSlug && typeof oldSlug === 'string' && oldSlug !== normalized) {
                         // Rename to a slug that already exists — block
@@ -181,6 +198,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }
                 slug = normalized;
             } else {
+                if (oldSlug) {
+                    return res.status(400).json({ error: 'A new slug is required when renaming a site.' });
+                }
                 slug = generateSlug();
                 let { data: existing } = await supabase
                     .from('deployed_sites')
@@ -241,6 +261,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 id: slug,
                 slug,
                 url,
+                ownerToken: createOwnerToken(slug),
                 created_at: new Date().toISOString(),
             });
         } catch (err) {

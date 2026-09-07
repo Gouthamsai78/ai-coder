@@ -56,13 +56,14 @@ A single function lives in `api/site.ts`. Vercel auto-detects it alongside the V
   "id": "my-site",
   "slug": "my-site",
   "url": "https://aicoderbygoutham.vercel.app/my-site",
+  "ownerToken": "<opaque-owner-token>",
   "created_at": "2026-06-18T12:00:00.000Z"
 }
 ```
 
 **Errors:**
 - `400` — HTML missing or >5MB, invalid slug
-- `401` — Missing/invalid `x-deploy-token` (only if `DEPLOY_TOKEN` env is set)
+- `401` — Missing/invalid deployment ownership token
 - `409` — Slug already taken
 - `500` — Storage not configured or server error
 
@@ -89,17 +90,18 @@ Deployed sites live in the `deployed_sites` table (columns: `slug`, `html`, `tit
 - `SUPABASE_URL` — Supabase project URL
 - `SUPABASE_ANON_KEY` — Supabase anon key
 
-**Optional env var:**
-- `DEPLOY_TOKEN` — if set, POST requires `x-deploy-token` header to match (write protection). The client sends this from `VITE_DEPLOY_TOKEN` if present.
+**Required env var:**
+- `DEPLOY_SECRET` — server-only secret used to sign deployment ownership tokens. Never expose it as a `VITE_*` variable.
 
 **Client-side env vars (build time):**
-- `VITE_DEPLOY_TOKEN` — optional; sent as `x-deploy-token` on deploys
 - `VITE_TAVILY_API_KEY` — enables web search during generation
 - `VITE_EMAILJS_SERVICE_ID` / `VITE_EMAILJS_TEMPLATE_ID` / `VITE_EMAILJS_PUBLIC_KEY` — override EmailJS contact/feedback config
 
 ## Local Development
 
-`npm run dev` serves the frontend only. To test the deploy/view API locally, run `npx vercel dev` (starts Vite + the `api/site.ts` function together). Set the env vars above in your local environment first.
+`npm run dev` serves the frontend only. To test the deploy/view and AI APIs locally, run `npx vercel dev` (starts Vite plus the serverless functions). Set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `DEPLOY_SECRET` in the server environment first.
+
+Provider API keys remain user-entered settings, but generation now goes through `/api/ai` so provider SDKs and provider requests are not bundled into the browser application.
 
 ## Vercel Configuration
 

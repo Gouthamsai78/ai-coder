@@ -27,6 +27,7 @@ const DeployModal: React.FC<DeployModalProps> = ({ code, githubToken, onClose, o
     const codePenFormRef = useRef<HTMLFormElement>(null);
 
     const existingSlug = storage.getString(STORAGE_KEYS.DEPLOYED_SLUG);
+    const ownerToken = storage.getString(STORAGE_KEYS.DEPLOY_OWNER_TOKEN);
     const isUpdate = !!existingSlug;
     const existingUrl = existingSlug ? `${DEPLOY_URL}/${existingSlug}` : '';
 
@@ -43,7 +44,7 @@ const DeployModal: React.FC<DeployModalProps> = ({ code, githubToken, onClose, o
         setDeployStatus('loading');
 
         try {
-            const body: { html: string; title: string; customSlug?: string; oldSlug?: string } = {
+            const body: { html: string; title: string; customSlug?: string; oldSlug?: string; ownerToken?: string } = {
                 html: code,
                 title: document.title,
             };
@@ -56,6 +57,7 @@ const DeployModal: React.FC<DeployModalProps> = ({ code, githubToken, onClose, o
                 }
                 // Always send oldSlug in update mode to prove ownership
                 body.oldSlug = existingSlug;
+                body.ownerToken = ownerToken;
             } else {
                 // First deploy: use custom slug if provided
                 if (customSlug.trim()) {
@@ -79,11 +81,15 @@ const DeployModal: React.FC<DeployModalProps> = ({ code, githubToken, onClose, o
             }
 
             const data = await res.json();
+            if (typeof data.slug !== 'string' || typeof data.url !== 'string' || typeof data.ownerToken !== 'string') {
+                throw new Error('Deployment returned an invalid response');
+            }
             setOneClickResult({ slug: data.slug, url: data.url });
             setDeployStatus('success');
 
             // Save deployed slug to localStorage
             storage.setString(STORAGE_KEYS.DEPLOYED_SLUG, data.slug);
+            storage.setString(STORAGE_KEYS.DEPLOY_OWNER_TOKEN, data.ownerToken);
 
             analytics.track('deploy_success', { platform: 'ai_coder_hosted' });
             analytics.track('site_deployed', { slug: data.slug, code_length: code.length });
@@ -149,6 +155,7 @@ const DeployModal: React.FC<DeployModalProps> = ({ code, githubToken, onClose, o
 
     const handleForgetDeployment = () => {
         storage.remove(STORAGE_KEYS.DEPLOYED_SLUG);
+        storage.remove(STORAGE_KEYS.DEPLOY_OWNER_TOKEN);
         resetState();
     };
 

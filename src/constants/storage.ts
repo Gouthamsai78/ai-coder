@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
     WEB_SEARCH_ENABLED: 'web_search_enabled',
     SEO_SETTINGS: 'seo_settings',
     DEPLOYED_SLUG: 'deployed_slug',
+    DEPLOY_OWNER_TOKEN: 'deploy_owner_token',
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];
