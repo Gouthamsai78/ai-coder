@@ -145,10 +145,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     }
 
     const controller = new AbortController();
-    req.on('aborted', () => controller.abort());
-    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-cache, no-transform');
-    res.setHeader('Connection', 'keep-alive');
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+    });
 
     try {
         if (request.provider === 'google') {
